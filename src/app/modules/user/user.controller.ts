@@ -13,7 +13,17 @@ const createUser = catchAsync(async (req: Request, res: Response, next: NextFunc
         data: user,
     })
 })
-
+const setBlockedUser = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.params.id;
+    const blockedUser = await UserServices.setBlockedUser(userId)
+    sendResponse(res, {
+        success: true,
+        statusCode: 200,
+        message: "User blocked Successfully",
+        data: blockedUser,
+    })
+})
 export const  UserController  ={
-    createUser
+    createUser,
+    setBlockedUser
 }

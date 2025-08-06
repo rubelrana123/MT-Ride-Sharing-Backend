@@ -25,5 +25,4 @@ export interface IRide {
   fare?: number;
 
   distance: number; // in km or miles
- 
 }

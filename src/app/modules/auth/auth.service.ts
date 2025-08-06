@@ -2,10 +2,12 @@ import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/appError";
 import { generateToken } from "../../utils/jwt";
  
+ 
 import { IUser } from "../user/user.interface";
 import { User } from "../user/user.model";
 import bcryptjs from "bcryptjs";
 const credentialsLogin = async (payload: Partial<IUser>) => {
+    //credential raw coding
     const { email, password } = payload;
 
     const isUserExist = await User.findOne({ email })
@@ -25,7 +27,8 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
         role: isUserExist.role
     }
     const accessToken = generateToken(jwtPayload, envVars.JWT_ACCESS_SECRET, envVars.JWT_ACCESS_EXPIRES)
-
+    
+ 
     return {
         accessToken
     }

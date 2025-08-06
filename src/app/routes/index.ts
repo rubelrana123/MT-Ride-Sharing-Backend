@@ -10,7 +10,7 @@ const moduleRoutes = [{
     route : userRoutes
    },
    {
-    path : "/ride",
+    path : "/rides",
     route : rideRoutes
    },
    {
@@ -18,7 +18,7 @@ const moduleRoutes = [{
     route : AuthRoutes
    },
  {
-    path : "/driver",
+    path : "/drivers",
     route : driverRoutes
    }
 ];
