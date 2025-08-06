@@ -13,6 +13,18 @@ const createDriver = catchAsync(async (req: Request, res: Response) => {
         data: driver,
     })
 });
+
+const  setApproveDriver = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.params.id;
+    const approveDriver = await DriverServices.setApproveDriver(userId)
+    sendResponse(res, {
+        success: true,
+        statusCode: 200,
+        message: "Driver approved Successfully",
+        data: approveDriver,
+    })
+})
 export const DriverController = {
-    createDriver
+    createDriver,
+    setApproveDriver
 }

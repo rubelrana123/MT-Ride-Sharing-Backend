@@ -40,10 +40,19 @@ export const createDriver = async (payload: Partial<IDriver>) => {
     ...rest,
   };
 
-  const driver = await Driver.create(driverPayload);
-  return driver;
+  const createdDriver = await Driver.create(driverPayload);
+   const populatedDriver = await Driver.findById(createdDriver._id).populate("user");
+  return populatedDriver;
 };
-
+export const setApproveDriver = async (driverId : string) => { 
+      const isDriverExist = await Driver.findOne({_id : driverId});
+      if (!isDriverExist) {
+        throw new AppError(409, "Driver not Exist");
+      }
+     const updatedBlockedUser = await Driver.findByIdAndUpdate({_id :driverId},{isApproved : true}, { new: true })
+      return updatedBlockedUser
+    }
 export const DriverServices = {
   createDriver,
+  setApproveDriver
 };

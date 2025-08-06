@@ -23,7 +23,15 @@ export const createUser = async (payload: Partial<IUser>) => {
   const user = await User.create(userPayload);
   return user;
 };
-
+export const setBlockedUser = async (userId : string) => { 
+      const isUserExist = await User.findOne({_id : userId});
+      if (!isUserExist) {
+        throw new AppError(409, "User not Exist");
+      }
+     const updatedBlockedUser = await User.findByIdAndUpdate({_id :userId},{isBlocked : true}, { new: true })
+      return updatedBlockedUser
+    }
 export const UserServices = {
   createUser,
+  setBlockedUser
 };
