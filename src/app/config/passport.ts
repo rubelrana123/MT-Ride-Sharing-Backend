@@ -4,53 +4,75 @@ import passport from "passport";
 import { User } from "../modules/user/user.model";
 
 import { Strategy as LocalStrategy } from "passport-local";
-import bcryptjs from "bcryptjs";
+import bcrypt from "bcryptjs";
+import { IsActive } from "../modules/user/user.interface";
 
+// This configures Passport.js for user authentication using the Local Strategy.
 passport.use(
   new LocalStrategy(
     {
       usernameField: "email",
       passwordField: "password",
     },
-    async (email: string, password: string, done) => {
+    async (email: string, password: string, done: any) => {
       try {
         const isUserExist = await User.findOne({ email });
+
         if (!isUserExist) {
-          return done("user does not exits" );
+          return done(null, false, { message: "User not found" });
         }
 
-        const isGoogleAuthenticated = isUserExist.auths.some(
-          (providerObjects) => providerObjects.provider == "google"
+        // check if user verified or unVerified
+        if (!isUserExist.isVerified) {
+          return done(null, false, {
+            message: "You're not verified yet, please verify your email first",
+          });
+        }
+
+        // check if user is InActive or Blocked
+        if (
+          isUserExist.isActive === IsActive.INACTIVE ||
+          isUserExist.isActive === IsActive.BLOCKED
+        ) {
+          return done(null, false, {
+            message: `User is ${isUserExist.isActive}, please contact our support team.`,
+          });
+        }
+
+        // check if user is deleted
+        if (isUserExist.isDeleted) {
+          return done(null, false, { message: "User is deleted." });
+        }
+
+        const isGoogleAuthenticatior = isUserExist?.auths?.some(
+          (providerObject) => providerObject.provider === "google"
         );
-        if (isGoogleAuthenticated && !isUserExist.password) {
-            return done(null, false, { message: "You have authenticated through Google. So if you want to login with credentials, then at first login with google and set a password for your Gmail and then you can login with email and password." })
+
+        // if user is created with google and password is not set
+        if (isGoogleAuthenticatior && !isUserExist.password) {
+          return done(
+            "Your account was created using Google. To log in, please click the 'Continue with Google' button. If you'd like to log in with a password, please set one first by using the 'Set Password?' option in your account."
+          );
         }
 
-        // if (isGoogleAuthenticated) {
-        //   return done(
-        //     "You have authenticated through Google. So if you want to login with credentials, then at first login with google and set a password for your Gmail and then you can login with email and password."
-        //   );
-        // }
-
-        const isPasswordMatched = await bcryptjs.compare(
+        const isPasswordMatch = await bcrypt.compare(
           password as string,
-          isUserExist.password as string
+          isUserExist?.password as string
         );
 
-        if (!isPasswordMatched) {
-          return done(null, false, { message: "Incorrect Password" });
+        if (!isPasswordMatch) {
+          return done(null, false, { message: "Incorrect password" });
         }
 
-        return done(null, isUserExist);
+        return done(null, isUserExist, { message: "Login successful" });
       } catch (error) {
-        console.log(error);
         done(error);
       }
     }
   )
 );
 
-
+// Serialize and deserialize user for session management
 passport.serializeUser((user: any, done: (err: any, id?: unknown) => void) => {
   done(null, user._id);
 });

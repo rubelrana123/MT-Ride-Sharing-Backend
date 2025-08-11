@@ -9,11 +9,10 @@ const router = Router();
 router.post("/login", authControllers.credentialsLogin);
 router.post("/refresh-token", authControllers.getNewAccessToken);
 router.post("/logout", authControllers.logout);
-router.post(
+router.patch(
   "/change-password",
   checkAuth(...Object.values(UserRole)),
   validateRequest(changePasswordZodSchema),
-  authControllers.changePassword
+  authControllers.resetPassword
 );
-router.post("/reset-password", checkAuth(...Object.values(UserRole)),  authControllers.resetPassword);
 export const AuthRoutes = router;
