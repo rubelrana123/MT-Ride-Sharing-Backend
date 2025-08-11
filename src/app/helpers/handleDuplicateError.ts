@@ -1,11 +1,15 @@
-import { TGenericErrorResponse } from "../interface/error.types";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
- 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export  const handlerDuplicateError = (err: any) : TGenericErrorResponse => {
-    const matchedArray = err.message.match(/"([^"]*)"/);
-    return {
-      statusCode: 400,
-      message : `${matchedArray[1]} already exxits`,
-    };
+import { TGenericErrorResponse } from "../types/error.types";
+
+
+
+
+export const handleDuplicateError = (err: any): TGenericErrorResponse => {
+  const matchedArray = err.message.match(/"([^"]*)"/);
+
+  return {
+    statusCode: 400,
+    message: `${matchedArray[1]} already exist. Try another one`,
   };
+};

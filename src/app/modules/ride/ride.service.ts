@@ -3,6 +3,9 @@ import { Types } from "mongoose";
 import { IRide } from "./ride.interface";
 import { Ride } from "./ride.model";
 import AppError from "../../errorHelpers/appError";
+import { User } from "../user/user.model";
+import { QueryBuilder } from "../../utils/queryBuilder";
+import { rideSearchableFields } from "./ride.constant";
  
 export const createRide = async (payload: Partial<IRide>) => {
   const { distance,rider,pickupLoc,destLoc,status,...rest } = payload;
@@ -30,6 +33,42 @@ export const createRide = async (payload: Partial<IRide>) => {
   const user = await Ride.create(ridePayload);
   return user;
 };
+const getAllRides = async (userId: string, query: Record<string, string>) => {
+  const isUserExist = await User.findById(userId);
+
+  // check user is exist or not
+  if (!isUserExist) {
+    throw new AppError(404, "User not found");
+  }
+    //   Create a QueryBuilder instance with the User model and the query
+    // const queryBuilder = new QueryBuilder(Ride.find(), query);
+  
+    //   Apply filters, search, sort, fields, and pagination using the QueryBuilder methods
+    // const users = queryBuilder
+    //   .search(rideSearchableFields)
+      // .filter()
+      // .sort()
+      // .fields()
+      // .paginate()
+      // .populate("rider", "-password")
+      // .populate("driver", "-password");
+  
+  
+      
+    //  Execute the query and get the data and metadata
+    // const [data, meta] = await Promise.all([
+    //   users.build().select("-password -auths"),
+    //   queryBuilder.getMeta(),
+    // ]);
+  
+
+  const allRides = await Ride.find().populate("rider", "-password").populate("driver", "-password");
+
+
+  return {
+    data, meta
+  }
+};
 export const getMyRide = async (userId : string) => {
    
   const ride = await Ride.find({rider : userId});
@@ -43,8 +82,11 @@ export const updateRideStatus = async (rideId : string, status : boolean) => {
      const updatedBlockedUser = await Ride.findByIdAndUpdate({_id : rideId},{status : status}, { new: true })
       return updatedBlockedUser
     }
+
+
 export const RideServices = {
   createRide,
+  getAllRides,
   getMyRide,
   updateRideStatus
 };
