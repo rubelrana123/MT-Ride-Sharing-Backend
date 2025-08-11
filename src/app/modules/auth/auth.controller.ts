@@ -8,6 +8,7 @@ import { setAuthCookie } from "../../utils/setCookies";
 import AppError from "../../errorHelpers/appError";
 import passport from "passport";
 import { AuthServices } from "./auth.service";
+import { JwtPayload } from "jsonwebtoken";
 
 const credentialsLogin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -76,8 +77,46 @@ const logout = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// This function handles changing the user's password.
+const changePassword = catchAsync(
+  async (req: Request, res: Response) => {
+    const { oldPassword, newPassword } = req.body;
+    const decodedToken = req.user as JwtPayload;
+
+    await AuthServices.changePassword(
+      decodedToken.userId,
+      oldPassword,
+      newPassword
+    );
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Password changed successfully",
+      data: null,
+    });
+  }
+);
+
+// This function handles resetting the user's password.
+const resetPassword = catchAsync(async(req: Request, res: Response ) => {
+   const decodedToken = req.user;
+   const newPassword = req.body.newPassword;
+   const oldPassword = req.body.oldPassword;
+
+   await AuthServices.resetPassword(oldPassword, newPassword, decodedToken as JwtPayload)
+     sendResponse(res, {
+        success : true,
+        statusCode : 200,
+        message : "Reset password successfully",
+        data :  null,  
+     })
+
+})
 export const authControllers = {
   credentialsLogin,
   getNewAccessToken,
   logout,
+  changePassword,
+  resetPassword
 };

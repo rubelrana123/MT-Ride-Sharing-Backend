@@ -1,65 +1,68 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { NextFunction, Request, Response } from "express";
 import { envVars } from "../config/env";
-import {  Request, Response } from "express";
-import AppError from "../errorHelpers/appError";
-import { handlerDuplicateError } from "../helpers/handleDuplicateError";
-import { handlerZodError } from "../helpers/handleZodError";
+import { TErrorSources } from "../types/error.types";
+import { handleDuplicateError } from "../helpers/handleDuplicateError";
 import { handleCastError } from "../helpers/handleCastError";
-import { handlerValidationError } from "../helpers/handleValidationError";
+import { handleZodError } from "../helpers/handleZodError";
+import { handleValidationError } from "../helpers/handleValidationError";
+import AppError from "../errorHelpers/appError";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const globalErrorHandler = (
+
+
+export const globalErrorHandler = async (
   err: any,
   req: Request,
   res: Response,
- 
+  next: NextFunction
 ) => {
-  if (envVars.NODE_ENV === "development") {
-    console.log("error from golbal", err);
-  }
- 
-  let statusCode  = 500;
-  let message = `something went wrong !!`;
- 
-  let errorSources: any = [];
+  let statusCode = 400;
+  let message = `Something went wrong!!`;
+  let errorSources: TErrorSources[] = [];
 
+
+  // ================ duplicate error======================================
   if (err.code === 11000) {
-    const simplifiedError = handlerDuplicateError(err);
+    const simplifiedError = handleDuplicateError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
   }
-  // Object ID error / Cast Error
+  // =================== CastError ===============================================
   else if (err.name === "CastError") {
-    const simplifiedError = handleCastError(err);
+    const simplifiedError = handleCastError();
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
   }
-
-  //Mongoose Validation Error
+  // =============== Zod error======================================
+  else if (err.name === "ZodError") {
+    const simplifiedError = handleZodError(err);
+    statusCode = simplifiedError.statusCode;
+    message = simplifiedError.message;
+    errorSources = simplifiedError.errorSources as TErrorSources[];
+  }
+  // ===================== Mongoose Validation Error================================
   else if (err.name === "ValidationError") {
-    const simplifiedError = handlerValidationError(err);
+    const simplifiedError = handleValidationError(err);
     statusCode = simplifiedError.statusCode;
-    errorSources = simplifiedError.errorSources;
     message = simplifiedError.message;
+    errorSources = simplifiedError.errorSources as TErrorSources[];
   }
-   else if (err.name === "ZodError") {
-    const simplifiedError = handlerZodError(err);
-    statusCode = simplifiedError.statusCode;
-    message = simplifiedError.message;
-    errorSources = simplifiedError.errorSources;
-  } else if (err instanceof AppError) {
+  // =============== Custom Error======================================
+  else if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
-  } else if (err instanceof Error) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    (statusCode = 500), (message = err.message);
+  }
+  // =============== Default Error===========================================
+  else if (err instanceof Error) {
+    statusCode = 400;
+    message = err.message;
   }
 
   res.status(statusCode).json({
     success: false,
     message,
     errorSources,
-
     err: envVars.NODE_ENV === "development" ? err : null,
     stack: envVars.NODE_ENV === "development" ? err.stack : null,
   });

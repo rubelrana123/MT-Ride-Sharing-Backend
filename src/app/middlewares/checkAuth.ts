@@ -1,60 +1,79 @@
-import { NextFunction, Request, Response } from "express";
-import AppError from "../errorHelpers/appError";
-import { verifyToken } from "../utils/jwt";
+import { verifyToken } from "./../utils/jwt";
+ 
+import { TNext, TRequest, TResponse } from "../types/global";
 import { envVars } from "../config/env";
 import { JwtPayload } from "jsonwebtoken";
+import AppError from "../errorHelpers/appError";
 import { User } from "../modules/user/user.model";
+import { IsActive } from "../modules/user/user.interface";
  
 
 export const checkAuth =
   (...authRoles: string[]) =>
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const accessToken = req.headers.authorization;
-      if (!accessToken) {
-        throw new AppError(403, "No token recieved");
-      }
 
-      const verifiedToken = verifyToken(
-        accessToken,
-        envVars.JWT_ACCESS_SECRET
-      ) as JwtPayload;
-      //  check user validation
-      const isUserExist = await User.findOne({ email: verifiedToken.email });
-      /* 
-{
-verifiedToken give like this format
-  "userId": "68766dd1fdb8460af07078b3",
-  "email": "super@gmail.com",
-  "role": "SUPER_ADMIN",
-  "iat": 1752915297,
-  "exp": 1753001697
-}
-    isVerified: boolean;
-  isDeleted: boolean;
-  isBlocked: boolean;
-*/
-      if (!isUserExist) {
-        throw new AppError(400, "User does not exist");
-      }
-      if (
-        isUserExist.isBlocked === true 
-      ) {
-        throw new AppError(400, `User is  blocked`);
-      }
-      if (isUserExist.isDeleted) {
-        throw new AppError(400, "User is deleted");
-      }
+  async (req: TRequest, res: TResponse, next: TNext) => {
+    // get the access token from the request headers
+    const accessToken = req.headers.authorization;
 
-      // end validation check user
-      console.log("v_token", verifiedToken);
-      if (!authRoles.includes(verifiedToken.role)) {
-        throw new AppError(403, `you are not permited to view this route !!`);
-      }
-      console.log("v_token next", verifiedToken);
-      req.user = verifiedToken;
-      next();
-    } catch (error) {
-      next(error);
+    // if the access token is not present, throw an error
+    if (!accessToken) {
+      throw new AppError(401, "Access token is missing");
     }
+
+    // verify the access token
+    const verifiedToken = verifyToken(
+      accessToken,
+      envVars.JWT_ACCESS_SECRET
+    ) as JwtPayload;
+
+
+    // if the token is not verified
+    if (!verifiedToken) {
+      throw new AppError(401, "Invalid access token");
+    }
+
+    // check if the user's role is allowed to access the resource
+    if (!authRoles.includes(verifiedToken.role)) {
+      throw new AppError(
+        403,
+        "You do not have permission to access this resource"
+      );
+    }
+
+    // get the user
+    const isUserExist = await User.findOne({ email: verifiedToken.email });
+
+    // if the user does not exist, throw an error
+    if (!isUserExist) {
+      throw new AppError(404, "User does not exist");
+    }
+
+    // check if user verified or unVerified
+    if (!isUserExist.isVerified) {
+      throw new AppError(
+       400,
+        "You're not verified yet, please verify your email first"
+      );
+    }
+
+    // check if user is InActive or Blocked
+    if (
+      isUserExist.isActive === IsActive.INACTIVE ||
+      isUserExist.isActive === IsActive.BLOCKED
+    ) {
+      throw new AppError(
+        403,
+        `User is ${isUserExist.isActive}, please contact our support team.`
+      );
+    }
+
+    // check if user  Deleted
+    if (isUserExist.isDeleted) {
+      throw new AppError(403, "User is deleted.");
+    }
+
+
+    req.user = verifiedToken;
+
+    next();
   };
