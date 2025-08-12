@@ -5,15 +5,15 @@ import app from "./app";
 import { envVars } from "./app/config/env";
 import { seedSuperAdmin } from "./app/utils/handleSuperAdmin";
 let server: Server;
-
+const port = envVars.PORT;
 const startServer = async () => {
     try {
         await mongoose.connect(envVars.DB_URL)
 
         console.log("Connected to DB!!");
 
-        server = app.listen(5000, () => {
-            console.log(`Server is listening to port ${5000}`);
+        server = app.listen(port, () => {
+            console.log(`Server is listening to port ${port}`);
         });
     } catch (error) {
         console.log(error);

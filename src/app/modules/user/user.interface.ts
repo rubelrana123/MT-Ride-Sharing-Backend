@@ -24,9 +24,12 @@ export interface IUser {
   picture?: string;
   address?: string;
   role: UserRole;
-  auths: IAuthProvider[];
-  isActive?: IsActive,
+  isActive?: IsActive;
   isVerified?: boolean;
   isDeleted?: boolean;
-  isBlocked?: boolean;
+  auths: IAuthProvider[];
 }
+
+/* 
+
+*/

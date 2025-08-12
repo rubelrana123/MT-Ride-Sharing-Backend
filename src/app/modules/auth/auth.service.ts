@@ -1,4 +1,4 @@
-import { JwtPayload } from "jsonwebtoken";
+
 import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/appError";
 import { createNewAccessTokenWithRefreshToken } from "../../utils/userToken";
@@ -9,7 +9,7 @@ const newAccessToken =await createNewAccessTokenWithRefreshToken(refreshToken as
   return { accessToken : newAccessToken };
 };
 // This function handles changing the user's password.
-const changePassword = async (
+const resetPassword = async (
   userId: string,
   oldPassword: string,
   newPassword: string
@@ -26,7 +26,6 @@ const changePassword = async (
       "You haven't set a password yet. Please set a password first."
     );
   }
-
   if (isUserExist._id.toString() !== userId) {
     throw new AppError(
       401,
@@ -53,30 +52,9 @@ const changePassword = async (
   return true;
 };
 
-// This function handles resetting the user's password.
-const resetPassword = async (oldPassword : string, newPassword : string, decodedToken : JwtPayload) => {
-
-  const isUserExist = await User.findById(decodedToken.userId);
-
-  if (!isUserExist) {
-    throw new AppError(404, "User not found");
-  }
-  const isOldPasswordMatch =  await bcrypt.compare(
-    oldPassword as string,
-    isUserExist.password as string
-  );
-
-  if (!isOldPasswordMatch) {
-    throw new AppError(401, "Old password does not match")
-    
-  }
-  isUserExist.password = await bcrypt.hash(newPassword, Number(envVars.BCRYPT_SALT_ROUND));
-  isUserExist.save()
  
-  
-};
 export const AuthServices = {
     getNewAccessToken,
-    changePassword,
+   
     resetPassword
 }

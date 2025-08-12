@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextFunction, Request, Response } from "express";
+ 
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendRespnse";
 
@@ -9,9 +9,10 @@ import AppError from "../../errorHelpers/appError";
 import passport from "passport";
 import { AuthServices } from "./auth.service";
 import { JwtPayload } from "jsonwebtoken";
+import { TNext, TRequest, TResponse } from "../../types/global";
 
 const credentialsLogin = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: TRequest, res: TResponse, next: TNext) => {
     passport.authenticate("local", async (err: any, user: any, info: any) => {
       if (err) {
         return next(err);
@@ -39,7 +40,7 @@ const credentialsLogin = catchAsync(
   }
 );
 
-const getNewAccessToken = catchAsync(async (req: Request, res: Response) => {
+const getNewAccessToken = catchAsync(async (req: TRequest, res: TResponse) => {
   const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
     throw new AppError(404, "refresh token not found");
@@ -57,7 +58,7 @@ const getNewAccessToken = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const logout = catchAsync(async (req: Request, res: Response) => {
+const logout = catchAsync(async (req: TRequest, res: TResponse) => {
   res.clearCookie("accessToken", {
     httpOnly: true,
     secure: false,
@@ -78,12 +79,12 @@ const logout = catchAsync(async (req: Request, res: Response) => {
 });
 
 // This function handles changing the user's password.
-const changePassword = catchAsync(
-  async (req: Request, res: Response) => {
+const resetPassword = catchAsync(
+  async (req: TRequest, res: TResponse) => {
     const { oldPassword, newPassword } = req.body;
     const decodedToken = req.user as JwtPayload;
 
-    await AuthServices.changePassword(
+    await AuthServices.resetPassword(
       decodedToken.userId,
       oldPassword,
       newPassword
@@ -97,26 +98,11 @@ const changePassword = catchAsync(
     });
   }
 );
-
-// This function handles resetting the user's password.
-const resetPassword = catchAsync(async(req: Request, res: Response ) => {
-   const decodedToken = req.user;
-   const newPassword = req.body.newPassword;
-   const oldPassword = req.body.oldPassword;
-
-   await AuthServices.resetPassword(oldPassword, newPassword, decodedToken as JwtPayload)
-     sendResponse(res, {
-        success : true,
-        statusCode : 200,
-        message : "Reset password successfully",
-        data :  null,  
-     })
-
-})
+ 
 export const authControllers = {
   credentialsLogin,
   getNewAccessToken,
   logout,
-  changePassword,
+ 
   resetPassword
 };
