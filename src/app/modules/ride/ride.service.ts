@@ -1,74 +1,96 @@
-// import AppError from "../../errorHelpers/appError";
-import { Types } from "mongoose";
+ 
 import { IRide } from "./ride.interface";
 import { Ride } from "./ride.model";
 import AppError from "../../errorHelpers/appError";
 import { User } from "../user/user.model";
 import { QueryBuilder } from "../../utils/queryBuilder";
 import { rideSearchableFields } from "./ride.constant";
+import { cancelledRideToday } from "../../utils/cancelledRideToday";
+import { calculateFare } from "../../utils/calculateFare";
+import { calculateDistanceInKm } from "../../utils/calculateDistanceInKm";
  
-export const createRide = async (payload: Partial<IRide>) => {
-  const { distance,rider,pickupLoc,destLoc,status,...rest } = payload;
-  const existingRide = await Ride.findOne({
-    rider : new Types.ObjectId(rider),
-    pickupLoc,
-    destLoc,
-    status,
-  });
+const requestRide = async (payload: Partial<IRide>, userId: string) => {
+  const isUserExist = await User.findById(userId);
 
-  if (existingRide) {
-    throw new Error("Ride with the same details already exists.");
+  if (!isUserExist) {
+    throw new AppError(404, "User not found");
   }
-  const fare = Number(distance) * 10;
-  const ridePayload = {
-    fare,
-    rider,
-    pickupLoc,
-    destLoc,
-    status,
-    distance,
-   ...rest
+
+  const todaysCancelledCount = await cancelledRideToday(userId);
+
+  if (todaysCancelledCount >= 3) {
+    throw new AppError(
+     400,
+      "You cannot request a ride today as you have cancelled 3 rides already."
+    );
+  }
+
+  const lat1 = payload.pickupLoc?.coordinates[0] as number;
+  const long1 = payload.pickupLoc?.coordinates[1] as number;
+  const lat2 = payload.destLoc?.coordinates[0] as number;
+  const long2 = payload.destLoc?.coordinates[1] as number;
+
+  const distance = calculateDistanceInKm(lat1, long1, lat2, long2);
+  const totalFare = calculateFare(distance);
+
+  const rideData = {
+    ...payload,
+    rider: userId,
+    distance :  distance.toFixed(2) + "km",
+    fare: totalFare,
   };
-  console.log("ridePayload", ridePayload)
-  const user = await Ride.create(ridePayload);
-  return user;
+
+  const rideRequested = await Ride.create(rideData);
+
+  return rideRequested;
 };
-const getAllRides = async (userId: string, query: Record<string, string>) => {
+
+ const getAllRides = async (userId: string, query: Record<string, string>) => {
   const isUserExist = await User.findById(userId);
 
   // check user is exist or not
   if (!isUserExist) {
     throw new AppError(404, "User not found");
   }
+
+  // check user are valid or not
+  if (isUserExist._id.toString() !== userId) {
+    throw new AppError(
+      401,
+      "You are not authorized for this action"
+    );
+  }
+
     //   Create a QueryBuilder instance with the User model and the query
-    // const queryBuilder = new QueryBuilder(Ride.find(), query);
+    const queryBuilder = new QueryBuilder(Ride.find(), query);
   
     //   Apply filters, search, sort, fields, and pagination using the QueryBuilder methods
-    // const users = queryBuilder
-    //   .search(rideSearchableFields)
-      // .filter()
-      // .sort()
-      // .fields()
-      // .paginate()
-      // .populate("rider", "-password")
-      // .populate("driver", "-password");
+    const users = queryBuilder
+      .search(rideSearchableFields)
+      .filter()
+      .sort()
+      .fields()
+      .paginate()
+      .populate("rider", "-password")
+      .populate("driver", "-password");
   
   
       
     //  Execute the query and get the data and metadata
-    // const [data, meta] = await Promise.all([
-    //   users.build().select("-password -auths"),
-    //   queryBuilder.getMeta(),
-    // ]);
+    const [data, meta] = await Promise.all([
+      users.build().select("-password -auths"),
+      queryBuilder.getMeta(),
+    ]);
   
 
-  const allRides = await Ride.find().populate("rider", "-password").populate("driver", "-password");
+  // const allRides = await Ride.find().populate("rider", "-password").populate("driver", "-password");
 
 
   return {
     data, meta
   }
 };
+
 export const getMyRide = async (userId : string) => {
    
   const ride = await Ride.find({rider : userId});
@@ -85,7 +107,7 @@ export const updateRideStatus = async (rideId : string, status : boolean) => {
 
 
 export const RideServices = {
-  createRide,
+  requestRide,
   getAllRides,
   getMyRide,
   updateRideStatus

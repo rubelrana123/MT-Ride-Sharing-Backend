@@ -1,6 +1,21 @@
 import { Schema, model } from "mongoose";
-import { IRide } from "./ride.interface";
+import { IRide, RideStatus } from "./ride.interface";
 
+
+const rideLocSchema = new Schema(
+  {
+    type: {
+      type: String,
+      enum: ["Point"],
+      required: true,
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: true,
+    },
+  },
+  { _id: false }
+);
 const rideSchema = new Schema<IRide>(
   {
     rider: {
@@ -13,37 +28,55 @@ const rideSchema = new Schema<IRide>(
       ref: "Driver",
     },
     pickupLoc: {
-      type: String,
+      type: rideLocSchema,
       required: true,
     },
     destLoc: {
-      type: String,
+      type: rideLocSchema,
       required: true,
     },
-    status: {
+    distance :  {
       type: String,
-      enum: [
-        "requested",
-        "accepted",
-        "picked_up",
-        "in_transit",
-        "completed",
-        "cancelled",
-      ],
-      default: "requested",
+      required: true,
     },
     fare: {
       type: Number,
       required: true,
     },
-    distance: {
-      type: Number,
-      required: true,
-    }
+    status: {
+       type: String,
+      enum: Object.values(RideStatus),
+      default: RideStatus.REQUESTED,
+    },
+    requestedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    rejectedAt: {
+      type: Date,
+    },
+    cancelledAt: {
+      type: Date,
+    },
+    acceptedAt: {
+      type: Date,
+    },
+    pickedupAt: {
+      type: Date,
+    },
+    inTransitAt: {
+      type: Date,
+    },
+    completedAt: {
+      type: Date,
+    }, 
   },
   {
-    timestamps: true,
+     timestamps: true,
+    versionKey: false
   }
 );
+rideSchema.index({ pickupLoc: "2dsphere" });
+rideSchema.index({ destLoc: "2dsphere" });
 
 export const Ride = model<IRide>("Ride", rideSchema);
