@@ -1,11 +1,38 @@
 import { Router } from "express";
 import { DriverController } from "./driver.controller";
+import { checkAuth } from "../../middlewares/checkAuth";
+import { UserRole } from "../user/user.interface";
+import { validateRequest } from "../../middlewares/validateRequest";
+import { driverZodSchema, updateDriveAvailityStatusZodSchema, updateDriverApplicationStatusSchema } from "./driver.validation";
+ 
  
  
 
 const router = Router();
-router.post("/create", DriverController.createDriver);
-router.patch("/approve/:id", DriverController.setApproveDriver);
-
+router.post("/apply-driver",checkAuth(UserRole.RIDER),validateRequest(driverZodSchema),
+  DriverController.applyForDriver
+);
+router.get(
+  "/driver-application",
+  checkAuth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
+  DriverController.getAllDriverApplication
+);
+router.get(
+  "/driver",
+  checkAuth(UserRole.ADMIN),
+  DriverController.getAllDriver
+);
+router.patch(
+  "/driver-application/:applicationId/status",
+  checkAuth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
+  validateRequest(updateDriverApplicationStatusSchema),
+  DriverController.updateDriverApplicationStatus
+);
+router.patch(
+  "/:driverId/availability",
+  checkAuth(UserRole.DRIVER),
+  validateRequest(updateDriveAvailityStatusZodSchema),
+  DriverController.updateDriverAvailityStatus
+);
 
 export const driverRoutes = router;

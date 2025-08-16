@@ -40,10 +40,10 @@ const rideSchema = new Schema<IRide>(
       required: true,
     },
     fare: {
-      type: Number,
+      type: String,
       required: true,
     },
-    status: {
+    rideStatus: {
        type: String,
       enum: Object.values(RideStatus),
       default: RideStatus.REQUESTED,

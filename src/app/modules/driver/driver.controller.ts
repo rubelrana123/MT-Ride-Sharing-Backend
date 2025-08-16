@@ -1,30 +1,88 @@
-import { Request, Response } from "express";
+ 
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendRespnse"
 import { DriverServices } from "./driver.service";
+import { TRequest, TResponse } from "../../types/global";
+import { JwtPayload } from "jsonwebtoken";
  
 
-const createDriver = catchAsync(async (req: Request, res: Response) => {
-    const driver = await DriverServices.createDriver(req.body)
+const applyForDriver = catchAsync( async (req: TRequest, res: TResponse ) => {
+    const decodedToken =  req.user as JwtPayload;
+    console.log(decodedToken, req.body)
+    const driver = await DriverServices.applyForDriver(req.body, decodedToken);
+
     sendResponse(res, {
+        statusCode:200,
         success: true,
-        statusCode: 200,
-        message: "Driver Created Successfully",
-        data: driver,
+        message: "Your application was successfully sent",
+        data: driver
     })
 });
 
-const  setApproveDriver = catchAsync(async (req: Request, res: Response) => {
-    const userId = req.params.id;
-    const approveDriver = await DriverServices.setApproveDriver(userId)
+
+const getAllDriverApplication = catchAsync( async (req: TRequest, res: TResponse ) => {
+    const decodedToken =  req.user as JwtPayload;
+    const query = req.query as Record<string, string>
+    const result = await DriverServices.getAllDriverApplication(decodedToken.userId, query);
+
     sendResponse(res, {
-        success: true,
         statusCode: 200,
-        message: "Driver approved Successfully",
-        data: approveDriver,
+        success: true,
+        message: "All Driver Application has been retrive successfully",
+        data: result.data,
+        meta: result.meta
     })
 })
+
+const getAllDriver = catchAsync( async (req: TRequest, res: TResponse) => {
+    const decodedToken =  req.user as JwtPayload;
+    const query = req.query as Record<string, string>
+
+
+    const result = await DriverServices.getAllDriver(decodedToken.userId, query);
+
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "All Driver has been retrive successfully",
+        data: result.data,
+        meta: result.meta
+    })
+})
+
+const updateDriverApplicationStatus = catchAsync( async (req: TRequest, res: TResponse) => {
+    const { driverStatus } = req.body;
+    const { applicationId } = req.params
+
+    const updateDriver = await DriverServices.updateDriverApplicationStatus(applicationId, driverStatus);
+
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Driver application has been approved. Please Login again to use all feature of driver role",
+        data: updateDriver
+    })
+});
+
+const updateDriverAvailityStatus = catchAsync( async (req: TRequest, res: TResponse) => {
+    const { availability } = req.body;
+    const { driverId } = req.params;
+    const decodedToken = req.user as JwtPayload;
+
+    const updateDriver = await DriverServices.updateDriverAvailityStatus(driverId, decodedToken, availability);
+
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Driver Availability status has been updated successfully",
+        data: updateDriver
+    })
+});
 export const DriverController = {
-    createDriver,
-    setApproveDriver
+    applyForDriver,
+    getAllDriverApplication,
+    getAllDriver,
+    updateDriverApplicationStatus,
+    updateDriverAvailityStatus
+     
 }

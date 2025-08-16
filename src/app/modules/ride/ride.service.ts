@@ -1,5 +1,5 @@
  
-import { IRide } from "./ride.interface";
+import { IRide, RideStatus } from "./ride.interface";
 import { Ride } from "./ride.model";
 import AppError from "../../errorHelpers/appError";
 import { User } from "../user/user.model";
@@ -8,6 +8,11 @@ import { rideSearchableFields } from "./ride.constant";
 import { cancelledRideToday } from "../../utils/cancelledRideToday";
 import { calculateFare } from "../../utils/calculateFare";
 import { calculateDistanceInKm } from "../../utils/calculateDistanceInKm";
+import { Driver } from "../driver/driver.model";
+import dayjs from "dayjs";
+import { DriverActiveRide, rideStatusFlow } from "./ride.status";
+import { Availability, DriverStatus } from "../driver/driver.interface";
+import { Types } from "mongoose";
  
 const requestRide = async (payload: Partial<IRide>, userId: string) => {
   const isUserExist = await User.findById(userId);
@@ -30,14 +35,22 @@ const requestRide = async (payload: Partial<IRide>, userId: string) => {
   const lat2 = payload.destLoc?.coordinates[0] as number;
   const long2 = payload.destLoc?.coordinates[1] as number;
 
+  const exists = await Ride.findOne({
+  "pickupLoc.coordinates": [lat1, long1],
+  "destLoc.coordinates": [lat2, long2]
+});
+
+if (exists) {
+  throw new Error("Ride with same pickup and destination already exists");
+}
   const distance = calculateDistanceInKm(lat1, long1, lat2, long2);
   const totalFare = calculateFare(distance);
 
   const rideData = {
     ...payload,
     rider: userId,
-    distance :  distance.toFixed(2) + "km",
-    fare: totalFare,
+    distance :  distance.toFixed(2) + " " + "km",
+    fare: totalFare + " "  + "BDT",
   };
 
   const rideRequested = await Ride.create(rideData);
@@ -96,15 +109,181 @@ export const getMyRide = async (userId : string) => {
   const ride = await Ride.find({rider : userId});
   return ride;
 };
-export const updateRideStatus = async (rideId : string, status : boolean) => { 
-      const isRideExist = await Ride.findOne({_id : rideId});
-      if (!isRideExist) {
-        throw new AppError(409, "Ride not Exist");
-      }
-     const updatedBlockedUser = await Ride.findByIdAndUpdate({_id : rideId},{status : status}, { new: true })
-      return updatedBlockedUser
+const updateRideStatus = async (
+  userId: string,
+  rideId: string,
+  newStatus: RideStatus
+) => {
+  // 1 Start a MongoDB session and transaction.
+  const session = await Ride.startSession();
+
+  try {
+    session.startTransaction();
+    // 2 Check if the user exists. If not, throw an error.
+    const isUserExist = await User.findById(userId);
+    if (!isUserExist) {
+      throw new AppError(404, "User not found");
     }
 
+    //3. Validate that the user ID matches the one provided (authorization check).
+    if (isUserExist._id.toString() !== userId) {
+      throw new AppError(
+        401,
+        "You are not authorized for this action"
+      );
+    }
+  //  4. Check if the ride exists. If not, throw an error.
+    const isRideExist = await Ride.findById(rideId);
+    if (!isRideExist) {
+      throw new AppError(404, "Ride not found");
+    }
+   //5. Find the driver record associated with the user ID.
+    const isDriverExist = await Driver.findOne({ driver: userId });
+
+    //6. Verify the driver’s status (cannot be PENDING, REJECTED, or SUSPEND).
+    if (
+      isDriverExist &&
+      (isDriverExist.driverStatus === DriverStatus.PENDING ||
+        isDriverExist.driverStatus === DriverStatus.REJECTED ||
+        isDriverExist.driverStatus === DriverStatus.SUSPEND)
+    ) {
+      throw new AppError(
+        400,
+        `You cann't accept any ride request. Because your driving status is ${isDriverExist.driverStatus}`
+      );
+    }
+
+    //7. Ensure the driver is not OFFLINE.
+    if (isDriverExist && isDriverExist.availability === Availability.OFFLINE) {
+      throw new AppError(
+        400,
+        `You cann't update ride status. Because your are offline`
+      );
+    }
+
+    if (
+      RideStatus.REJECTED === newStatus ||
+      RideStatus.ACCEPTED === newStatus
+    ) {
+      //8 Check if the driver already has an active ride with a non-completed status
+      const isDriverHaveActiveRide = await Ride.findOne({
+        driver: userId,
+        rideStatus: { $in: DriverActiveRide }, // accepted, rejected, in-transmit
+      });
+
+     
+      if (isDriverHaveActiveRide) {
+        throw new AppError(
+          400,
+          `You already have an active ride in progress`
+        );
+      }
+    }
+
+    // prevent ride cancell by driver
+    if (RideStatus.CANCELLED === newStatus) {
+      throw new AppError(400, "You cann't cancel any ride");
+    }
+
+    // check if rider already cancelled
+    if (isRideExist.rideStatus === RideStatus.CANCELLED) {
+      throw new AppError(
+        400,
+        `This ride has already been '${isRideExist.rideStatus}' by the rider.`
+      );
+    }
+
+    // Check that the requested status transition is valid using rideStatusFlow.
+    if (!rideStatusFlow[isRideExist.rideStatus].includes(newStatus)) {
+      throw new AppError(
+        400,
+        `Invalid status transition from '${isRideExist.rideStatus}' to '${newStatus}'.`
+      );
+    }
+
+    //  Prepare an update object and get the current timestamp in Dhaka timezone.
+    let updateRideData;
+    const nowInDhaka = dayjs().tz("Asia/Dhaka").format();
+
+    // . Handle ACCEPTED and REJECTED: assign driver, update status, record timestamp.
+    if (RideStatus.REJECTED === newStatus) {
+      updateRideData = {
+        driver: userId,
+        rideStatus: newStatus,
+        acceptedAt: nowInDhaka,
+      };
+    }
+    if (RideStatus.ACCEPTED === newStatus) {
+      updateRideData = {
+        driver: userId,
+        rideStatus: newStatus,
+        acceptedAt: nowInDhaka,
+      };
+    }
+
+    // If the ride is already accepted, verify that the current user is the assigned driver
+    if (isRideExist.rideStatus === RideStatus.ACCEPTED) {
+      if ((isRideExist.driver as Types.ObjectId).toString() !== userId) {
+        throw new AppError(
+          400,
+          `You are not assign to this ride`
+        );
+      }
+    }
+
+    // Set ride status and record timestamp (e.g., pickedUpAt, inTransitAt, completedAt) based on the new status
+    switch (newStatus) {
+      case RideStatus.PICKED_UP:
+        updateRideData = {
+          rideStatus: newStatus,
+          pickedupAt: nowInDhaka,
+        };
+        break;
+      case RideStatus.IN_TRANSIT:
+        updateRideData = {
+          rideStatus: newStatus,
+          inTransitAt: nowInDhaka,
+        };
+        break;
+      case RideStatus.COMPLETED:
+        updateRideData = {
+          rideStatus: newStatus,
+          completedAt: nowInDhaka,
+        };
+        // driver,driverStatus ,earnings
+        //On COMPLETED, update driver’s earnings (currently overwrites earnings).
+        await Driver.findOneAndUpdate(
+          { driver: userId },
+          { earnings: isRideExist?.fare },
+          { session }
+        );
+        break;
+      default:
+        break;
+    }
+
+    /*
+    imagine ride
+     IRide {,rider,driver?,pickupLoc,destLoc,distance ,fare,rideStatus,requestedAt,cancelledAt,
+     rejectedAt,acceptedAt,completedAt,pickedupAt,inTransitAt }
+      */
+    //. Update the ride document in the database.
+    const rideStatusUpdate = await Ride.findByIdAndUpdate(
+      rideId,
+      updateRideData,
+      { new: true, runValidators: true, session }
+    );
+
+    await session.commitTransaction();
+    await session.endSession();
+
+    return rideStatusUpdate;
+  } catch (error) {
+    await session.abortTransaction();
+    await session.endSession();
+    throw error;
+  }
+};
 
 export const RideServices = {
   requestRide,

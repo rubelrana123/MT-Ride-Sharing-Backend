@@ -1,6 +1,6 @@
 import { Query } from "mongoose";
 import { excludedFields } from "../constants/global.constants";
-
+ 
 
 export class QueryBuilder<T> {
   public modelQuery: Query<T[], T>;
@@ -29,7 +29,7 @@ export class QueryBuilder<T> {
 
 
   search(searchableFields: string[]): this {
-    const searchTerm = (this.query.searchTerm as string) || "";
+    const searchTerm = this.query.searchTerm || "";
     const searchQuery = {
       $or: searchableFields.map((field) => ({
         [field]: { $regex: searchTerm, $options: "i" },
