@@ -1,14 +1,27 @@
 import { Types } from "mongoose";
-import { IUser } from "../user/user.interface";
-
-export interface IDriver extends IUser {
-  _id: Types.ObjectId; // Primary key
-  user: Types.ObjectId; // Reference to User model (one-to-one)
-  licenseNo: string;
-  vehicleMake: string;
-  vehicleModel: string;
-  vehicleYear: number;
-  vehicleColor: string;
-  isApproved: boolean;
-  isOnline: boolean; 
+export enum Availability {
+  ONLINE = "online",
+  OFFLINE = "offline"
 }
+
+export enum DriverStatus {
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+  SUSPEND = "suspend"
+}
+
+
+export interface IDriver {
+ driver: Types.ObjectId;
+  vehicleInfo: {
+    vehicleType: string;
+    model: string;
+    plate: string;
+  };
+  licenseNumber: string;
+  availability: Availability;
+  driverStatus: DriverStatus;
+  earnings?: number;
+}
+

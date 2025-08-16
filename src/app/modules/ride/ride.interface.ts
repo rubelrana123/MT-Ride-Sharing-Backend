@@ -21,8 +21,8 @@ export interface IRide {
   pickupLoc: IRideLocation;
   destLoc: IRideLocation;
   distance : string;
-  fare: number;
-  status: RideStatus;
+  fare: string;
+  rideStatus: RideStatus;
   requestedAt: Date;
   cancelledAt: Date;
   rejectedAt: Date;
