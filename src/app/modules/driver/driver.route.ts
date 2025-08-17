@@ -19,7 +19,7 @@ router.get(
 );
 router.get(
   "/driver",
-  checkAuth(UserRole.ADMIN),
+  checkAuth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
   DriverController.getAllDriver
 );
 router.patch(

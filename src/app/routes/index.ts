@@ -6,7 +6,7 @@ import { driverRoutes } from "../modules/driver/driver.route";
 
 export const router = Router();
 const moduleRoutes = [{
-    path : "/user",
+    path : "/users",
     route : userRoutes
    },
    {

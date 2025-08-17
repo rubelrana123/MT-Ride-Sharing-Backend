@@ -191,26 +191,26 @@ const updateDriverApplicationStatus = async (
       { new: true, runValidators: true, session }
     );
 
-    const driverData = {
-      driver: updateApplication?.driver,
-      vehicleInfo: {
-        vehicleType: updateApplication?.vehicleInfo?.vehicleType,
-        model: updateApplication?.vehicleInfo?.model,
-        plate: updateApplication?.vehicleInfo?.plate,
-      },
-      licenseNumber: updateApplication?.licenseNumber,
-      availability: updateApplication?.availability,
-      driverStatus: updateApplication?.driverStatus,
-    };
+    // const driverData = {
+    //   driver: updateApplication?.driver,
+    //   vehicleInfo: {
+    //     vehicleType: updateApplication?.vehicleInfo?.vehicleType,
+    //     model: updateApplication?.vehicleInfo?.model,
+    //     plate: updateApplication?.vehicleInfo?.plate,
+    //   },
+    //   licenseNumber: updateApplication?.licenseNumber,
+    //   availability: updateApplication?.availability,
+    //   driverStatus: updateApplication?.driverStatus,
+    // };
 
-    const updateApplicationStatus = await Driver.create([driverData], {
-      session,
-    });
+    // const updateApplicationStatus = await Driver.create([driverData], {
+    //   session,
+    // });
 
     await session.commitTransaction();
     session.endSession();
 
-    return updateApplicationStatus;
+    return updateApplication;
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
@@ -223,8 +223,13 @@ const updateDriverAvailityStatus = async (
   decodedToken: JwtPayload,
   availability: Availability
 ) => {
-  const isDriverExist = await Driver.findById(driverId);
+  
+ if (!mongoose.Types.ObjectId.isValid(driverId)) {
+  throw new AppError(400, "Invalid driverId");
+}
 
+const isDriverExist = await Driver.findOne({ driver: driverId });
+console.log("isDriverExist", isDriverExist)
   // checking is driver exist or not
   if (!isDriverExist) {
     throw new AppError(
@@ -248,13 +253,13 @@ const updateDriverAvailityStatus = async (
     );
   }
 
-  const updateAvailability = await Driver.findByIdAndUpdate(
-    driverId,
-    { availability: availability },
+  const updatedDriver = await Driver.findOneAndUpdate(
+    { driver: driverId }, // find by driver field
+    { availability },     // update availability
     { new: true, runValidators: true }
   );
 
-  return updateAvailability;
+  return updatedDriver;
 };
 export const DriverServices = {
   applyForDriver,
