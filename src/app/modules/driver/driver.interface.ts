@@ -22,6 +22,6 @@ export interface IDriver {
   licenseNumber: string;
   availability: Availability;
   driverStatus: DriverStatus;
-  earnings?: number;
+  earnings?: string;
 }
 

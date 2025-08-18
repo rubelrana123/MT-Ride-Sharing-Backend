@@ -220,6 +220,7 @@ const updateRideStatus = async (
     if (isRideExist.rideStatus === RideStatus.ACCEPTED) {
       if ((isRideExist.driver as Types.ObjectId).toString() !== userId) {
         throw new AppError(
+          
           400,
           `You are not assign to this ride`
         );

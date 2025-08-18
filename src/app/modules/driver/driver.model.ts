@@ -22,7 +22,7 @@ const driverSchema = new Schema<IDriver>(
       default: DriverStatus.PENDING,
     },
     earnings: {
-      type: Number,
+      type: String,
       default: 0
     }
   },
