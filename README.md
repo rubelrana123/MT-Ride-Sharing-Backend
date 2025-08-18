@@ -19,11 +19,22 @@ Built with a modular architecture following RESTful principles.
 
 ## Getting Started
 
-### Prerequisites
+## ⚙️ Technologies Used
 
-- Node.js (v14+)
-- npm or yarn
-- Mongoose
+    - Node.js	                        JavaScript runtime environment.
+    - Express.JS                            Fast, unopinionated, minimalist web framework for Node.js.
+    - TypeScript                            Statically typed superset of JavaScript for robust code.
+    - Mongodb                               NoSQL database for storing user, ride, and driver data.
+    - Mongoose                              Elegant MongoDB object modeling for Node.js.
+    - JWT (JSON Web Token)                  For creating secure access tokens for authentication.
+    - Bcrypt.js	                        A library to help you hash passwords.
+    - Zod	                                TypeScript-first schema declaration and validation library.
+    - Day.js	                        For handling dates and times efficiently.
+    - Vercel                                for deployment
+    - Postman                               for api testing
+
+<br> </br>
+
 
 ### Installation
 
@@ -41,6 +52,7 @@ Create a `.env` file in the root directory and set the following variables:
 PORT=5000
 DB_URI=your_database_uri
 JWT_SECRET=your_jwt_secret
+....others
 ```
 
 ### Running the Server
@@ -48,10 +60,44 @@ JWT_SECRET=your_jwt_secret
 ```bash
 npm run dev
 ```
+## 🗂️ Project Structure
+The project follows a modular architecture to keep the codebase clean, scalable, and easy to maintain.
+
+```
+🗂️ src/
+├── app.ts                      # Creates and configures the Express application
+├── server.ts                   # Connects to the database and starts the server
+│
+├── app/
+│   ├── modules/
+│   │   ├── auth/               # Handles authentication logic
+│   │   ├── user/               # Handles user management logic
+│   │   ├── driver/             # Handles driver-specific logic
+│   │   ├── ride/               # Handles ride management logic
+│   │   └── analytics/          # Handles data analytics for admins
+│   │
+│   ├── middlewares/            # Contains global middlewares
+│   ├── utils/                  # Contains shared utility functions
+│   └── config/                 # Contains environment variables and config
+│
+├── errorHelpers/               # Contains the custom AppError class
+│   └── AppError.ts
+│
+├── helpers/                    # Contains specific error handling functions
+│   ├── handleCastError.ts
+│   ├── handleDuplicateError.ts
+│   ├── handleValidationError.ts
+│   └── handleZodError.ts
+│
+└── ...                           # Other directories as needed
+
+```
+
+<br> </br>
 
 # API Endpoints Documentation
 
-## Authentication
+## Authentication(/auth)
 | Method | Endpoint           | Description              | Access Control |
 |--------|--------------------|--------------------------|----------------|
 | POST   | `/signup`          | User registration        | Public         |
@@ -108,34 +154,33 @@ npm run dev
 ## 🗂️ Project Structure
 The project follows a modular architecture to keep the codebase clean, scalable, and easy to maintain.
 
-```
-🗂️ src/
-├── app.ts                      # Creates and configures the Express application
-├── server.ts                   # Connects to the database and starts the server
+📦 src/
+├── app.ts                       # Creates and configures the Express application
+├── server.ts                    # Connects to the database and starts the server
 │
 ├── app/
-│   ├── modules/
-│   │   ├── auth/               # Handles authentication logic
-│   │   ├── user/               # Handles user management logic
-│   │   ├── driver/             # Handles driver-specific logic
-│   │   ├── ride/               # Handles ride management logic
-│   │   └── analytics/          # Handles data analytics for admins
+│   ├── modules/                 # Feature-based modules
+│   │   ├── auth/                # 🔐 Authentication & Authorization logic
+│   │   ├── user/                # 👤 User management
+│   │   ├── driver/              # 🚖 Driver-specific operations
+│   │   ├── ride/                # 🛺 Ride booking & tracking
+│   │   └── analytics/           # 📊 Data analytics for admins
 │   │
-│   ├── middlewares/            # Contains global middlewares
-│   ├── utils/                  # Contains shared utility functions
-│   └── config/                 # Contains environment variables and config
+│   ├── middlewares/             # 🌐 Global middlewares (e.g., auth, error handler)
+│   ├── utils/                   # 🛠️ Shared helper functions
+│   └── config/                  # ⚙️ Environment variables & configuration
 │
-├── errorHelpers/               # Contains the custom AppError class
-│   └── AppError.ts
+├── errorHelpers/                # 🚨 Custom error handling utilities
+│   └── AppError.ts              #   → Centralized AppError class
 │
-├── helpers/                    # Contains specific error handling functions
+├── helpers/                     # ⚡ Specific error handling functions
 │   ├── handleCastError.ts
 │   ├── handleDuplicateError.ts
 │   ├── handleValidationError.ts
 │   └── handleZodError.ts
 │
-└── ...                         # Other directories as needed
+└── ...                          # 📁 Additional directories (if required)
 
 ```
 
-<br> </br>
+ 
