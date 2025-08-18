@@ -109,33 +109,33 @@ npm run dev
 The project follows a modular architecture to keep the codebase clean, scalable, and easy to maintain.
 
 ```
-🗂️ src/
-├── app.ts                      # Creates and configures the Express application
-├── server.ts                   # Connects to the database and starts the server
+📦 src/
+├── app.ts                       # Creates and configures the Express application
+├── server.ts                    # Connects to the database and starts the server
 │
 ├── app/
-│   ├── modules/
-│   │   ├── auth/               # Handles authentication logic
-│   │   ├── user/               # Handles user management logic
-│   │   ├── driver/             # Handles driver-specific logic
-│   │   ├── ride/               # Handles ride management logic
-│   │   └── analytics/          # Handles data analytics for admins
+│   ├── modules/                 # Feature-based modules
+│   │   ├── auth/                # 🔐 Authentication & Authorization logic
+│   │   ├── user/                # 👤 User management
+│   │   ├── driver/              # 🚖 Driver-specific operations
+│   │   ├── ride/                # 🛺 Ride booking & tracking
+│   │   └── analytics/           # 📊 Data analytics for admins
 │   │
-│   ├── middlewares/            # Contains global middlewares
-│   ├── utils/                  # Contains shared utility functions
-│   └── config/                 # Contains environment variables and config
+│   ├── middlewares/             # 🌐 Global middlewares (e.g., auth, error handler)
+│   ├── utils/                   # 🛠️ Shared helper functions
+│   └── config/                  # ⚙️ Environment variables & configuration
 │
-├── errorHelpers/               # Contains the custom AppError class
-│   └── AppError.ts
+├── errorHelpers/                # 🚨 Custom error handling utilities
+│   └── AppError.ts              #   → Centralized AppError class
 │
-├── helpers/                    # Contains specific error handling functions
+├── helpers/                     # ⚡ Specific error handling functions
 │   ├── handleCastError.ts
 │   ├── handleDuplicateError.ts
 │   ├── handleValidationError.ts
 │   └── handleZodError.ts
 │
-└── ...                         # Other directories as needed
+└── ...                          # 📁 Additional directories (if required)
 
 ```
 
-<br> </br>
+ 
