@@ -7,7 +7,7 @@ import { User } from "./user.model";
 import bcryptjs from "bcryptjs";
 export const createUser = async (payload: Partial<IUser>) => {
   const { email, password, ...rest } = payload;
-  const isUserExist =await User.findOne({ email });
+  const isUserExist = await User.findOne({ email });
   if (isUserExist) {
     throw new AppError(409, "User Already Exist");
   }
@@ -33,10 +33,7 @@ const getMe = async (userId: string) => {
   }
 
   if (user._id.toString() !== userId) {
-    throw new AppError(
-      403,
-      "You are not authorized to perform this action"
-    );
+    throw new AppError(403, "You are not authorized to perform this action");
   }
 
   return user;
@@ -82,12 +79,12 @@ const updateUserInfo = async (
   payload: Partial<IUser>,
   decodedToken: JwtPayload
 ) => {
-  if (decodedToken.role === UserRole.RIDER && decodedToken.role === UserRole.DRIVER) {
+  if (
+    decodedToken.role === UserRole.RIDER &&
+    decodedToken.role === UserRole.DRIVER
+  ) {
     if (decodedToken.userId !== userId) {
-      throw new AppError(
-       401,
-        "You are not authorized for this action"
-      );
+      throw new AppError(401, "You are not authorized for this action");
     }
   }
 
@@ -104,34 +101,34 @@ const updateUserInfo = async (
     throw new AppError(400, "password cannot be updated here");
   }
   if (payload.role) {
-    if (decodedToken.role === UserRole.RIDER && decodedToken.role === UserRole.DRIVER) {
-      throw new AppError(
-        401,
-        "You are not authorized for this action"
-      );
+    if (
+      decodedToken.role === UserRole.RIDER &&
+      decodedToken.role === UserRole.DRIVER
+    ) {
+      throw new AppError(401, "You are not authorized for this action");
     }
 
     const isSelf = isUserExist.email === decodedToken.email;
     const tryingToDowngradeSelf =
       payload.role === UserRole.RIDER || payload.role === UserRole.DRIVER;
 
-    if (isSelf && decodedToken.role === UserRole.ADMIN && tryingToDowngradeSelf) {
-      throw new AppError(
-        403,
-        "You cann't chang your own role"
-      );
+    if (
+      isSelf &&
+      decodedToken.role === UserRole.ADMIN &&
+      tryingToDowngradeSelf
+    ) {
+      throw new AppError(403, "You cann't chang your own role");
     }
   }
 
   if (payload.isActive || payload.isDeleted || payload.isVerified) {
-    if (decodedToken.role === UserRole.RIDER && decodedToken.User === UserRole.DRIVER) {
-      throw new AppError(
-        401,
-        "You are not authorized for this action"
-      );
+    if (
+      decodedToken.role === UserRole.RIDER &&
+      decodedToken.User === UserRole.DRIVER
+    ) {
+      throw new AppError(401, "You are not authorized for this action");
     }
   }
- 
 
   const updateUser = await User.findByIdAndUpdate(userId, payload, {
     new: true,
@@ -141,24 +138,31 @@ const updateUserInfo = async (
   return updateUser;
 };
 
-export const setBlockedUser = async (userId : string) => { 
-      const isUserExist = await User.findOne({_id : userId});
-      if (!isUserExist) {
-        throw new AppError(409, "User not Exist");
-      }
-     const updatedBlockedUser = await User.findByIdAndUpdate({_id :userId},{isActive : IsActive.BLOCKED}, { new: true })
-      return updatedBlockedUser
-    };
-   
-   
-    export const deleteUser = async (userId : string) => { 
-      const isUserExist = await User.findOne({_id : userId});
-      if (!isUserExist) {
-        throw new AppError(409, "User not Exist");
-      }
-     const deletedUser = await User.findByIdAndUpdate({_id :userId},{isDeleted : true}, { new: true })
-      return deletedUser
-    }
+export const setBlockedUser = async (userId: string) => {
+  const isUserExist = await User.findOne({ _id: userId });
+  if (!isUserExist) {
+    throw new AppError(409, "User not Exist");
+  }
+  const updatedBlockedUser = await User.findByIdAndUpdate(
+    { _id: userId },
+    { isActive: IsActive.BLOCKED },
+    { new: true }
+  );
+  return updatedBlockedUser;
+};
+
+export const deleteUser = async (userId: string) => {
+  const isUserExist = await User.findOne({ _id: userId });
+  if (!isUserExist) {
+    throw new AppError(409, "User not Exist");
+  }
+  const deletedUser = await User.findByIdAndUpdate(
+    { _id: userId },
+    { isDeleted: true },
+    { new: true }
+  );
+  return deletedUser;
+};
 export const UserServices = {
   createUser,
   getMe,
@@ -166,5 +170,5 @@ export const UserServices = {
   getSingleUser,
   updateUserInfo,
   deleteUser,
-  setBlockedUser
+  setBlockedUser,
 };

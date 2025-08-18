@@ -19,17 +19,6 @@ const requestRide = catchAsync(async (req: TRequest, res: TResponse ) => {
   }
 );
 
-const getMyRide = catchAsync(async (req: TRequest, res: TResponse ) => {
-      const verifiedToken = req.user;
-      console.log("verifiedToken", verifiedToken)
-    const ride = await RideServices.getMyRide((verifiedToken as JwtPayload).userId)
-    sendResponse(res, {
-        success: true,
-        statusCode: 200,
-        message: "Ride Created Successfully",
-        data: ride,
-    })
-});
 const  updateRideStatus = catchAsync(async (req: TRequest, res: TResponse ) => {
     const rideId = req.params.rideId;
     const status = req.body.status;
@@ -60,9 +49,53 @@ const getAllRides = catchAsync(
   }
 );
 
+
+const viewRideHistroy = catchAsync(
+  async (req: TRequest, res: TResponse) => {
+    const decodedToken = req.user as JwtPayload
+    const result = await RideServices.viewRideHistroy(decodedToken.userId);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Ride Histroy has been retrive successfully",
+      data: result,
+    });
+  }
+);
+const viewEarningHistory = catchAsync(
+  async (req: TRequest, res: TResponse ) => {
+    const decodedToken = req.user as JwtPayload
+    const result = await RideServices.viewEarningHistory(decodedToken.userId);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Driver Earning Histroy has been retrive successfully",
+      data: result,
+    });
+  }
+);
+const cancelRide = catchAsync(
+  async (req: TRequest, res: TResponse) => {
+    const { rideStatus } = req.body;
+    const { rideId } = req.params
+    const decodedToken = req.user as JwtPayload
+    const result = await RideServices.cancelRide(decodedToken.userId, rideId, rideStatus);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Your ride has been cancelled successfully",
+      data: result,
+    });
+  }
+);
 export const RideController = {
     requestRide,
     getAllRides,
-    getMyRide,
-    updateRideStatus
+    viewRideHistroy,
+    viewEarningHistory,
+    updateRideStatus,
+    cancelRide
 }

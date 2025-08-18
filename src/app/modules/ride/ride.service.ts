@@ -104,11 +104,6 @@ if (exists) {
   }
 };
 
-export const getMyRide = async (userId : string) => {
-   
-  const ride = await Ride.find({rider : userId});
-  return ride;
-};
 const updateRideStatus = async (
   userId: string,
   rideId: string,
@@ -225,6 +220,7 @@ const updateRideStatus = async (
     if (isRideExist.rideStatus === RideStatus.ACCEPTED) {
       if ((isRideExist.driver as Types.ObjectId).toString() !== userId) {
         throw new AppError(
+          
           400,
           `You are not assign to this ride`
         );
@@ -284,10 +280,119 @@ const updateRideStatus = async (
     throw error;
   }
 };
+const viewRideHistroy = async (userId: string) => {
+  const isUserExist = await User.findById(userId);
+
+  if (!isUserExist) {
+    throw new AppError(404, "User not found");
+  }
+
+  if (isUserExist._id.toString() !== userId) {
+    throw new AppError(
+      401,
+      "You are not authorized for this action"
+    );
+  }
+
+  const rideHistroy = await Ride.find({
+    $and: [
+      { rider: userId },
+      {
+        rideStatus: { $nin: ["accepted", "picked_up", "in_transit"] },
+      },
+    ],
+  });
+
+  return rideHistroy;
+};
+const viewEarningHistory = async (userId: string) => {
+  const isUserExist = await User.findById(userId);
+
+  if (!isUserExist) {
+    throw new AppError(404, "User not found");
+  }
+
+  if (isUserExist._id.toString() !== userId) {
+    throw new AppError(
+      401,
+      "You are not authorized for this action"
+    );
+  }
+
+  const driverRideHistroy = await Ride.find({
+    driver: userId,
+    rideStatus: { $in: [RideStatus.COMPLETED] },
+  });
+
+  return driverRideHistroy;
+};
+const cancelRide = async (
+  userId: string,
+  rideId: string,
+  cancelStatus: string
+) => {
+  const isUserExist = await User.findById(userId);
+
+  if (!isUserExist) {
+    throw new AppError(404, "User not found");
+  }
+
+  if (isUserExist._id.toString() !== userId) {
+    throw new AppError(
+      401,
+      "You are not authorized for this action"
+    );
+  }
+
+  const isRideExist = await Ride.findById(rideId);
+
+  if (!isRideExist) {
+    throw new AppError(404, "Ride not found");
+  }
+
+  if (
+    isRideExist.rideStatus === RideStatus.ACCEPTED ||
+    isRideExist.rideStatus === RideStatus.COMPLETED ||
+    isRideExist.rideStatus === RideStatus.PICKED_UP ||
+    isRideExist.rideStatus === RideStatus.REJECTED ||
+    isRideExist.rideStatus === RideStatus.IN_TRANSIT
+  ) {
+    throw new AppError(
+      400,
+      `You cann't cancel your ride. Because your ride status is ${isRideExist.rideStatus}`
+    );
+  }
+
+  if (isRideExist.rideStatus === RideStatus.CANCELLED) {
+    throw new AppError(
+      400,
+      "You already  cancelled this ride"
+    );
+  }
+
+  const todaysCancelledCount = await cancelledRideToday(userId);
+
+  if (todaysCancelledCount >= 3) {
+    throw new AppError(
+      400,
+      "You cannot cancel this ride — your daily cancel limit (3) has been reached."
+    );
+  }
+
+  const cancelledRide = await Ride.findByIdAndUpdate(
+    rideId,
+    { rideStatus: cancelStatus, cancelledAt: Date.now() },
+    { new: true, runValidators: true }
+  );
+
+  return cancelledRide;
+};
 
 export const RideServices = {
   requestRide,
   getAllRides,
-  getMyRide,
-  updateRideStatus
+  viewRideHistroy,
+  updateRideStatus,
+  viewEarningHistory,
+  cancelRide
 };

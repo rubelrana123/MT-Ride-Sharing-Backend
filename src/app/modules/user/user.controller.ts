@@ -14,16 +14,6 @@ const createUser = catchAsync(async (req: TRequest, res: TResponse, next: TNext)
         data: user,
     })
 })
-const setBlockedUser = catchAsync(async (req: TRequest, res: TResponse) => {
-    const userId = req.params.userId;
-    const blockedUser = await UserServices.setBlockedUser(userId)
-    sendResponse(res, {
-        success: true,
-        statusCode: 200,
-        message: "User blocked Successfully",
-        data: blockedUser,
-    })
-});
 
 const getMe = catchAsync(
   async (req: TRequest, res: TResponse) => {
@@ -83,7 +73,7 @@ const deleteUser = catchAsync(async (req: TRequest, res: TResponse) => {
     sendResponse(res, {
         success: true,
         statusCode: 200,
-        message: "User blocked Successfully",
+        message: "User delete Successfully",
         data: deletedUser,
     })
 });
@@ -114,6 +104,5 @@ export const  UserController  ={
     getAllUsers,
     getSingleUser,
     deleteUser,
-    setBlockedUser,
     updateUserInfo
 }
