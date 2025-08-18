@@ -3,6 +3,7 @@ import { userRoutes } from "../modules/user/user.route";
 import { AuthRoutes } from "../modules/auth/auth.route";
 import { rideRoutes } from "../modules/ride/ride.route";
 import { driverRoutes } from "../modules/driver/driver.route";
+import { AnalyticsRoutes } from "../modules/analytics/analytics.route";
 
 export const router = Router();
 const moduleRoutes = [{
@@ -20,7 +21,11 @@ const moduleRoutes = [{
  {
     path : "/drivers",
     route : driverRoutes
-   }
+   },
+     {
+    path: "/analytics",
+    route: AnalyticsRoutes,
+  },
 ];
 moduleRoutes.forEach((route) => {
     router.use(route.path, route.route)
