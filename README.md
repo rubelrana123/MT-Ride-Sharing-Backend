@@ -3,17 +3,21 @@
 MyTrip Ride Sharing Backend is a RESTful API service for managing ride sharing operations, including user authentication, ride requests, driver management, and trip tracking.
 ## Useful Links Here
 
-- **Live Server:** [https://mytrip-ride-sharing-backend.example.com](https://mytrip-ride-sharing-backend.example.com)
-- **Postman Documentation:** [https://documenter.getpostman.com/view/your-doc-id/MyTrip-Ride-Sharing-API](https://documenter.getpostman.com/view/your-doc-id/MyTrip-Ride-Sharing-API)
+- **Live Server:** [https://my-trip-ride-sharing-backend.vercel.app/](https://my-trip-ride-sharing-backend.vercel.app/)
+- **Postman Documentation:** [Postman API Docs](https://documenter.getpostman.com/view/27456550/2sB3BHmUHm)
 - **Video Explanation:** [YouTube - MyTrip Backend Overview](https://youtu.be/your-video-id)
-## Features
 
-🔒 **JWT Authentication** with role-based access (Admin, Driver, Rider)  
-🚗 **Ride Management** - Request, track, and cancel rides  
-👤 **User Profiles** - Personal and driver accounts  
-💰 **Earnings Tracking** - For drivers  
-📊 **Admin Dashboard** - Manage users, drivers, and rides  
-🔐 **Security** - Bcrypt password hashing, request validation  
+## Key Features
+🔐 **Secure Authentication** - JWT with role-based access  
+📊 **Comprehensive Analytics** - Platform statistics for admins  
+🚕 **Ride Lifecycle** - Full ride management from request to completion  
+👤 **Role-Specific Features** - Tailored functionality for each user type  
+⚙️ **Admin Controls** - User and driver management  
+
+> **Note**: All endpoints require JWT authentication unless marked as "Public".  
+> Request validation and error handling are implemented throughout the API.
+    
+```
 
 Built with a modular architecture following RESTful principles.
 
@@ -33,15 +37,15 @@ Built with a modular architecture following RESTful principles.
     - Vercel                                for deployment
     - Postman                               for api testing
 
-<br> </br>
 
+```
 
 ### Installation
+ bash
+ git clone https://github.com/yourusername/MyTrip-Ride-Sharing-Backend.git
+ cd MyTrip-Ride-Sharing-Backend
+ npm install
 
-```bash
-git clone https://github.com/yourusername/MyTrip-Ride-Sharing-Backend.git
-cd MyTrip-Ride-Sharing-Backend
-npm install
 ```
 
 ### Configuration
@@ -139,48 +143,5 @@ The project follows a modular architecture to keep the codebase clean, scalable,
 |--------|-----------|---------------------------------|----------------------|
 | GET    | `/stats`  | Get platform analytics          | ADMIN, SUPER_ADMIN   |
 
-## Key Features
-🔐 **Secure Authentication** - JWT with role-based access  
-📊 **Comprehensive Analytics** - Platform statistics for admins  
-🚕 **Ride Lifecycle** - Full ride management from request to completion  
-👤 **Role-Specific Features** - Tailored functionality for each user type  
-⚙️ **Admin Controls** - User and driver management  
 
-> **Note**: All endpoints require JWT authentication unless marked as "Public".  
-> Request validation and error handling are implemented throughout the API.
-    
-```
 
-## 🗂️ Project Structure
-The project follows a modular architecture to keep the codebase clean, scalable, and easy to maintain.
-
-📦 src/
-├── app.ts                       # Creates and configures the Express application
-├── server.ts                    # Connects to the database and starts the server
-│
-├── app/
-│   ├── modules/                 # Feature-based modules
-│   │   ├── auth/                # 🔐 Authentication & Authorization logic
-│   │   ├── user/                # 👤 User management
-│   │   ├── driver/              # 🚖 Driver-specific operations
-│   │   ├── ride/                # 🛺 Ride booking & tracking
-│   │   └── analytics/           # 📊 Data analytics for admins
-│   │
-│   ├── middlewares/             # 🌐 Global middlewares (e.g., auth, error handler)
-│   ├── utils/                   # 🛠️ Shared helper functions
-│   └── config/                  # ⚙️ Environment variables & configuration
-│
-├── errorHelpers/                # 🚨 Custom error handling utilities
-│   └── AppError.ts              #   → Centralized AppError class
-│
-├── helpers/                     # ⚡ Specific error handling functions
-│   ├── handleCastError.ts
-│   ├── handleDuplicateError.ts
-│   ├── handleValidationError.ts
-│   └── handleZodError.ts
-│
-└── ...                          # 📁 Additional directories (if required)
-
-```
-
- 

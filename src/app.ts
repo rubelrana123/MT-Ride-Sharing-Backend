@@ -25,7 +25,7 @@ app.use(cors({
   origin: envVars.FRONTEND_URL,
   credentials: true
 }));
-app.use("/api/v1", router);
+app.use("/api/v1/", router);
 
 app.get("/", (req: Request, res: Response) => {
     res.status(200).json({
