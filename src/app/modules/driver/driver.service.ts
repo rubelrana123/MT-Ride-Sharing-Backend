@@ -229,7 +229,7 @@ const updateDriverAvailityStatus = async (
 }
 
 const isDriverExist = await Driver.findOne({ driver: driverId });
-console.log("isDriverExist", isDriverExist)
+ 
   // checking is driver exist or not
   if (!isDriverExist) {
     throw new AppError(

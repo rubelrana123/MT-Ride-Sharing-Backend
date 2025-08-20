@@ -8,7 +8,6 @@ import { JwtPayload } from "jsonwebtoken";
 
 const applyForDriver = catchAsync( async (req: TRequest, res: TResponse ) => {
     const decodedToken =  req.user as JwtPayload;
-    console.log(decodedToken, req.body)
     const driver = await DriverServices.applyForDriver(req.body, decodedToken);
 
     sendResponse(res, {
