@@ -6,7 +6,19 @@ MyTrip Ride Sharing Backend is a RESTful API service for managing ride sharing o
 - **Live Server:** [https://my-trip-ride-sharing-backend.vercel.app/](https://my-trip-ride-sharing-backend.vercel.app/)
 - **Postman Documentation:** [Postman API Docs](https://documenter.getpostman.com/view/27456550/2sB3BHmUHm)
 - **Video Explanation:** [YouTube - MyTrip Backend Overview](https://drive.google.com/file/d/1rrrY2J3r7UhWfBJLjY90qx7ssTi6nMnY/view?usp=sharing)
-
+ ```
+# API Testing Password : 
+ Super Admin : 
+ {
+    "email" : "super@gmail.com",
+    "password" : "12345678"
+}
+Driver : 
+{
+    "email": "avida@gmail.com",
+    "password": "DriverPass123!"
+}
+```
 ## Key Features
 🔒 **JWT Authentication** with role-based access (Admin, Driver, Rider)  
 🚗 **Ride Management** - Request, track, and cancel rides  
@@ -94,7 +106,7 @@ The project follows a modular architecture to keep the codebase clean, scalable,
 ```
 
 # API Endpoints Documentation
-``Base API : http://localhost:5000/api/v1/``
+``Base API : http://localhost:5000/api/v1/{users/auth/riders/drivers}``
 ## Authentication(/auth)
 | Method | Endpoint           | Description              | Access Control |
 |--------|--------------------|--------------------------|----------------|
