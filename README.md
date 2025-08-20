@@ -94,7 +94,7 @@ The project follows a modular architecture to keep the codebase clean, scalable,
 ```
 
 # API Endpoints Documentation
-
+``Base API : http://localhost:5000/api/v1/``
 ## Authentication(/auth)
 | Method | Endpoint           | Description              | Access Control |
 |--------|--------------------|--------------------------|----------------|
