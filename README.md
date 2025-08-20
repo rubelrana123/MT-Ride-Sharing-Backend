@@ -63,7 +63,7 @@ npm run dev
 ```
 ## 🗂️ Project Structure
 The project follows a modular architecture to keep the codebase clean, scalable, and easy to maintain.
-
+```
 📦 src/
 ├── app.ts                       # Creates and configures the Express application
 ├── server.ts                    # Connects to the database and starts the server
@@ -94,7 +94,7 @@ The project follows a modular architecture to keep the codebase clean, scalable,
 ```
 
 # API Endpoints Documentation
-
+``Base API : http://localhost:5000/api/v1/``
 ## Authentication(/auth)
 | Method | Endpoint           | Description              | Access Control |
 |--------|--------------------|--------------------------|----------------|
