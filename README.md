@@ -63,7 +63,7 @@ npm run dev
 ```
 ## 🗂️ Project Structure
 The project follows a modular architecture to keep the codebase clean, scalable, and easy to maintain.
-
+```
 📦 src/
 ├── app.ts                       # Creates and configures the Express application
 ├── server.ts                    # Connects to the database and starts the server
