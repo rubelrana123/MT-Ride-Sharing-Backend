@@ -13,6 +13,8 @@ import dayjs from "dayjs";
 import { DriverActiveRide, rideStatusFlow } from "./ride.status";
 import { Availability, DriverStatus } from "../driver/driver.interface";
 import { Types } from "mongoose";
+import { JwtPayload } from "jsonwebtoken";
+import { UserRole } from "../user/user.interface";
  
 const requestRide = async (payload: Partial<IRide>, userId: string) => {
   const isUserExist = await User.findById(userId);
@@ -102,6 +104,113 @@ if (exists) {
   return {
     data, meta
   }
+};
+
+const getRideDetails = async (rideId: string, decodedToken: JwtPayload) => {
+  // step 1: get the logged in user info
+  const { userId, role } = decodedToken;
+
+  // step 2 finding the ride and populate the rider/driver data
+  const ride = await Ride.aggregate([
+    // step 1: find the ride useing ride id
+    {
+      $match: { _id: new Types.ObjectId(rideId) },
+    },
+    // step 2 get the ride user info from users collection
+    {
+      $lookup: {
+        from: "users",
+        localField: "rider",
+        foreignField: "_id",
+        as: "riderInfo",
+      },
+    },
+    // step 3 get the driver user info from users collection
+    {
+      $lookup: {
+        from: "users",
+        localField: "driver",
+        foreignField: "_id",
+        as: "driverUserInfo",
+      },
+    },
+    // step: 4 get the drvier vehicle info from drivers collection
+    {
+      $lookup: {
+        from: "drivers",
+        localField: "driver",
+        foreignField: "driver",
+        as: "driverVehicleInfo",
+      },
+    },
+
+    { $unwind: "$riderInfo" },
+    { $unwind: { path: "$driverUserInfo", preserveNullAndEmptyArrays: true } },
+    {
+      $unwind: { path: "$driverVehicleInfo", preserveNullAndEmptyArrays: true },
+    },
+
+    {
+      $project: {
+        _id: 1,
+        rideStatus: 1,
+        fare: 1,
+        statusLogs: 1,
+        createdAt: 1,
+        pickupAddress: 1,
+        pickupCoordinates: 1,
+        destinationAddress: 1,
+        destinationCoordinates: 1,
+        platformEarnings: 1,
+        commisionRate: 1,
+        rider: {
+          _id: "$riderInfo._id",
+          name: "$riderInfo.name",
+          phoneNumber: "$riderInfo.phoneNumber",
+          email: "$riderInfo.email",
+          role: "$riderInfo.role",
+        },
+        driver: {
+          $cond: {
+            if: { $ifNull: ["$driverUserInfo", false] },
+            then: {
+              _id: "$driverUserInfo._id",
+              name: "$driverUserInfo.name",
+              phoneNumber: "$driverUserInfo.phoneNumber",
+              email: "$driverUserInfo.email",
+              role: "$driverUserInfo.role",
+              vehicleInfo: "$driverVehicleInfo.vehicleInfo",
+              licenseNumber: "$driverVehicleInfo.licenseNumber",
+            },
+
+            else: null,
+          },
+        },
+      },
+    },
+  ]);
+
+  // যদি রাইড খুঁজে না পাওয়া যায়
+  if (!ride[0]) {
+    throw new AppError(404, "This ride does not exist");
+  }
+
+  // 👇 ধাপ ৩: একটিমাত্র পরিষ্কার অথোরাইজেশন চেক
+  const isAdmin = role === UserRole.ADMIN;
+  const isRiderOfThisRide = ride[0]?.rider._id?.toString() === userId;
+  // 💡 সেফটি চেক: ride.driver null হতে পারে, তাই optional chaining (?.) ব্যবহার করুন
+  const isDriverOfThisRide = ride[0]?.driver?._id?.toString() === userId;
+
+  // যদি ব্যবহারকারী অ্যাডমিন না হয়, এবং ওই রাইডের রাইডার বা ড্রাইভারও না4 হয়
+  if (!isAdmin && !isRiderOfThisRide && !isDriverOfThisRide) {
+    throw new AppError(
+      401,
+      "You are not authorized to view this ride's details."
+    );
+  }
+
+  // যদি উপরের শর্ত পাস করে, তাহলে ব্যবহারকারী অনুমোদিত
+  return ride[0];
 };
 
 const updateRideStatus = async (
@@ -392,6 +501,7 @@ export const RideServices = {
   requestRide,
   getAllRides,
   viewRideHistroy,
+  getRideDetails,
   updateRideStatus,
   viewEarningHistory,
   cancelRide

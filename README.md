@@ -3,9 +3,9 @@
 MyTrip Ride Sharing Backend is a RESTful API service for managing ride sharing operations, including user authentication, ride requests, driver management, and trip tracking.
 ## Useful Links Here
 
-- **Live Server:** [https://my-trip-ride-sharing-backend.vercel.app/](https://my-trip-ride-sharing-backend.vercel.app/)
-- **Postman Documentation:** [Postman API Docs](https://documenter.getpostman.com/view/27456550/2sB3BHmUHm)
-- **Video Explanation:** [YouTube - MyTrip Backend Overview](https://www.youtube.com/watch?v=yDaFX2kP4Aw)
+ Live Server: https://my-trip-ride-sharing-backend.vercel.app/
+ Postman Documentation: https://documenter.getpostman.com/view/27456550/2sB3BHmUHm
+ Video Explanation: https://www.youtube.com/watch?v=yDaFX2kP4Aw
  ```
 # API Testing Password : 
  Super Admin : 

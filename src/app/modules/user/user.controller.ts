@@ -98,11 +98,33 @@ const updateUserInfo = catchAsync(
   }
 );
 
+
+// only admin can access this endpoint
+const updateUserStatus = catchAsync(
+  async (req: TRequest, res: TResponse) => {
+    const payload = req.body;
+    const decodedToken = req.user as JwtPayload;
+    console.log(decodedToken, "decodedToken", payload, "payload", req.params);
+    const user = await UserServices.updateUserStatus(
+      payload.userId,
+      payload.isActive,
+      decodedToken
+    );
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Rider status updated successfully",
+      data: user,
+    });
+  }
+);
 export const  UserController  ={
     createUser,
     getMe,
     getAllUsers,
     getSingleUser,
     deleteUser,
-    updateUserInfo
+    updateUserInfo,
+    updateUserStatus
 }

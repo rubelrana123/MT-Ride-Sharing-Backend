@@ -48,6 +48,21 @@ const getAllRides = catchAsync(
     });
   }
 );
+const getRideDetails = catchAsync(
+  async (req: TRequest, res: TResponse) => {
+    const decodedToken = req.user as JwtPayload
+    const { rideId } = req.params
+
+    const result = await RideServices.getRideDetails(rideId, decodedToken);
+
+    sendResponse(res, {
+      statusCode: 404,
+      success: true,
+      message: "Ride Details has been retrive successfully",
+      data: result,
+    });
+  }
+);
 
 
 const viewRideHistroy = catchAsync(
@@ -95,6 +110,7 @@ export const RideController = {
     requestRide,
     getAllRides,
     viewRideHistroy,
+    getRideDetails,
     viewEarningHistory,
     updateRideStatus,
     cancelRide

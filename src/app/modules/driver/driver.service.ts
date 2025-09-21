@@ -89,8 +89,8 @@ const getAllDriverApplication = async (
       "Youre not authorized to perform this action"
     );
   }
-
-  const queryBuilder = new QueryBuilder(Driver.find(), query);
+//   Driver.find().populate("driver", "name email phone"),
+  const queryBuilder = new QueryBuilder(Driver.find().populate("driver", "name email phone role"), query);
 
   const driverApplication = queryBuilder
     .search(driverSearchFields)

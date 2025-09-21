@@ -28,7 +28,7 @@ router.patch(
   validateRequest(updateUserZodSchema),
   UserController.updateUserInfo
 );
- 
+ router.patch("/:userId/userStatus", checkAuth(UserRole.ADMIN, UserRole.SUPER_ADMIN), UserController.updateUserStatus);
 router.delete(
   "/:userId",
   checkAuth(UserRole.ADMIN, UserRole.SUPER_ADMIN),

@@ -2,7 +2,7 @@ import { JwtPayload } from "jsonwebtoken";
 import AppError from "../../errorHelpers/appError";
 import { QueryBuilder } from "../../utils/queryBuilder";
 import { userSearchableFields } from "./user.constants";
-import { IAuthProvider, IsActive, IUser, UserRole } from "./user.interface";
+import { IAuthProvider,  IUser, UserRole } from "./user.interface";
 import { User } from "./user.model";
 import bcryptjs from "bcryptjs";
 export const createUser = async (payload: Partial<IUser>) => {
@@ -138,20 +138,36 @@ const updateUserInfo = async (
   return updateUser;
 };
 
-export const setBlockedUser = async (userId: string) => {
-  const isUserExist = await User.findOne({ _id: userId });
-  if (!isUserExist) {
-    throw new AppError(409, "User not Exist");
+ 
+const updateUserStatus = async (
+  userId: string,
+  status: string,
+  decodedToken: JwtPayload
+) => {
+  if (decodedToken.role !== UserRole.ADMIN) {
+    throw new AppError(
+      401,
+      "You are not authorized for this acton"
+    );
   }
-  const updatedBlockedUser = await User.findByIdAndUpdate(
-    { _id: userId },
-    { isActive: IsActive.BLOCKED },
-    { new: true }
-  );
-  return updatedBlockedUser;
-};
 
-export const deleteUser = async (userId: string) => {
+  const isUserExist = await User.findById(userId).select("-password");
+  if (!isUserExist) {
+    throw new AppError(404, "User not found");
+  }
+
+  const updateUser = await User.findByIdAndUpdate(
+    userId,
+    { isActive: status },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  return updateUser;
+};
+ export const deleteUser = async (userId: string) => {
   const isUserExist = await User.findOne({ _id: userId });
   if (!isUserExist) {
     throw new AppError(409, "User not Exist");
@@ -169,6 +185,7 @@ export const UserServices = {
   getAllUsers,
   getSingleUser,
   updateUserInfo,
-  deleteUser,
-  setBlockedUser,
+ updateUserStatus,
+ deleteUser
+  
 };

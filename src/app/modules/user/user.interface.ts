@@ -17,13 +17,14 @@ export interface IAuthProvider {
 }
 export interface IUser {
   _id?: Types.ObjectId; 
-   name: string;
+  name: string;
   email: string;
   password?: string;
   phone?: string;
   picture?: string;
   address?: string;
   role: UserRole;
+  //  status?: string;
   isActive?: IsActive;
   isVerified?: boolean;
   isDeleted?: boolean;

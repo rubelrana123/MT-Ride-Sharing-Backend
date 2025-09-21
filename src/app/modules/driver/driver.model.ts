@@ -4,7 +4,11 @@ import { Availability, DriverStatus, IDriver } from "./driver.interface";
 
 const driverSchema = new Schema<IDriver>(
   {
-    driver: { type: Schema.Types.ObjectId },
+    // driver: { type: Schema.Types.ObjectId },
+    driver: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
     vehicleInfo: {
       vehicleType: { type: String },
       model: { type: String },
