@@ -10,8 +10,7 @@ const router = Router();
 
 
 
-router.get("/stats", checkAuth(UserRole.ADMIN, UserRole.SUPER_ADMIN), AnalyticController.adminDashboardStats)
-
-
+router.get("/stats", checkAuth(UserRole.ADMIN), AnalyticController.adminDashboardStats)
+router.get("/driverStats", checkAuth(UserRole.DRIVER), AnalyticController.driverDashboardStats)
 
 export const AnalyticsRoutes = router;

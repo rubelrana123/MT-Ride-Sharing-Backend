@@ -52,11 +52,10 @@ const getRideDetails = catchAsync(
   async (req: TRequest, res: TResponse) => {
     const decodedToken = req.user as JwtPayload
     const { rideId } = req.params
-
     const result = await RideServices.getRideDetails(rideId, decodedToken);
 
     sendResponse(res, {
-      statusCode: 404,
+      statusCode: 200,
       success: true,
       message: "Ride Details has been retrive successfully",
       data: result,
@@ -93,10 +92,9 @@ const viewEarningHistory = catchAsync(
 );
 const cancelRide = catchAsync(
   async (req: TRequest, res: TResponse) => {
-    const { rideStatus } = req.body;
-    const { rideId } = req.params
+    const { rideId } = req.params;
     const decodedToken = req.user as JwtPayload
-    const result = await RideServices.cancelRide(decodedToken.userId, rideId, rideStatus);
+    const result = await RideServices.cancelRide(decodedToken.userId, rideId);
 
     sendResponse(res, {
       statusCode: 200,

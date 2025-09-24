@@ -20,10 +20,26 @@ const adminDashboardStats = catchAsync( async (req: TRequest, res: TResponse) =>
         data: result
     })
 })
+const driverDashboardStats = catchAsync(
+  async (req: TRequest, res: TResponse ) => {
+    const decodedToken = req.user as JwtPayload;
 
+    const result = await AnalyticsService.driverDashboardStats(
+      decodedToken.userId
+    );
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Driver Dasboard Stats has been retrive successfully",
+      data: result,
+    });
+  }
+);
 
 
 
 export const AnalyticController = {
-    adminDashboardStats
+    adminDashboardStats,
+    driverDashboardStats
 }

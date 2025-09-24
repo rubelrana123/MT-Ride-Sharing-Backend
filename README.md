@@ -143,7 +143,6 @@ The project follows a modular architecture to keep the codebase clean, scalable,
 | GET    | `/driver`                         | List approved drivers           | ADMIN, SUPER_ADMIN   |
 | PATCH  | `/driver-application/:id/status`  | Update application status       | ADMIN, SUPER_ADMIN   |
 | PATCH  | `/:driverId/availability`         | Update availability status      | DRIVER               |
-
 ## Analytics (`/analytics`)
 | Method | Endpoint  | Description                     | Access Control       |
 |--------|-----------|---------------------------------|----------------------|

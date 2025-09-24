@@ -8,6 +8,8 @@ import { QueryBuilder } from "../../utils/queryBuilder";
 import { driverSearchFields } from "./driver.constant";
 import { Availability, DriverStatus } from "./driver.interface";
 import mongoose from "mongoose";
+import { Ride } from "../ride/ride.model";
+import { RideStatus } from "../ride/ride.interface";
 
 const applyForDriver = async (
   payload: Partial<IUser>,
@@ -31,14 +33,14 @@ const applyForDriver = async (
   if (isUserExist._id.toString() !== decodedToken.userId) {
     throw new AppError(
       401,
-      "Youre not authorized to perform this action"
+      "You're not authorized to perform this action"
     );
   }
 
   // checking address provided or not
   if (!isUserExist.address) {
     throw new AppError(
-      400,
+      404,
       "Please update your address before applying as a driver."
     );
   }
@@ -49,7 +51,7 @@ const applyForDriver = async (
   });
   if (isApplicationExist) {
     throw new AppError(
-      400,
+      404,
       "You have already submitted a driver application"
     );
   }
@@ -57,8 +59,8 @@ const applyForDriver = async (
   // checking user alreay are in driver role
   if (isUserExist.role === UserRole.DRIVER) {
     throw new AppError(
-      400,
-      "You have already registred as drive"
+      404,
+      "You have already registred as driver"
     );
   }
 
@@ -261,10 +263,44 @@ const isDriverExist = await Driver.findOne({ driver: driverId });
 
   return updatedDriver;
 };
+const getDriverProfile = async (userId: string) => {
+  const isDriverExist = await Driver.findOne({ driver: userId });
+
+  if (!isDriverExist) {
+    throw new AppError(404, "You are not a driver!");
+  }
+
+  return isDriverExist;
+};
+
+const getIncomingRideRequest = async (
+  driverId: string,
+  query: Record<string, string>
+) => {
+  const isDriverExist = await Driver.findOne({ driver: driverId });
+
+  if (!isDriverExist) {
+    throw new AppError(404, "You are not a driver");
+  }
+
+  const queryBuilder = new QueryBuilder(Ride.find( { rideStatus: RideStatus.REQUESTED} ), query);
+
+  const driverApplication = queryBuilder.filter().sort().fields().paginate().populate("rider", "name email phone");
+
+    const [data, meta] = await Promise.all([
+    driverApplication.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return { data, meta}
+};
+
 export const DriverServices = {
   applyForDriver,
   getAllDriverApplication,
   getAllDriver,
   updateDriverApplicationStatus,
-  updateDriverAvailityStatus
+  updateDriverAvailityStatus,
+  getDriverProfile,
+  getIncomingRideRequest
 };

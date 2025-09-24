@@ -16,6 +16,7 @@ import { Types } from "mongoose";
 import { JwtPayload } from "jsonwebtoken";
 import { UserRole } from "../user/user.interface";
  
+ 
 const requestRide = async (payload: Partial<IRide>, userId: string) => {
   const isUserExist = await User.findById(userId);
 
@@ -107,16 +108,15 @@ if (exists) {
 };
 
 const getRideDetails = async (rideId: string, decodedToken: JwtPayload) => {
-  // step 1: get the logged in user info
   const { userId, role } = decodedToken;
+console.log(userId, "this is login user id");
+console.log(role, "this is login user role");
+console.log(rideId, "this is ride id from params");
 
-  // step 2 finding the ride and populate the rider/driver data
   const ride = await Ride.aggregate([
-    // step 1: find the ride useing ride id
-    {
-      $match: { _id: new Types.ObjectId(rideId) },
-    },
-    // step 2 get the ride user info from users collection
+    { $match: { _id: new Types.ObjectId(rideId) } },
+
+    // Rider info
     {
       $lookup: {
         from: "users",
@@ -125,7 +125,8 @@ const getRideDetails = async (rideId: string, decodedToken: JwtPayload) => {
         as: "riderInfo",
       },
     },
-    // step 3 get the driver user info from users collection
+
+    // Driver user info
     {
       $lookup: {
         from: "users",
@@ -134,7 +135,8 @@ const getRideDetails = async (rideId: string, decodedToken: JwtPayload) => {
         as: "driverUserInfo",
       },
     },
-    // step: 4 get the drvier vehicle info from drivers collection
+
+    // Driver vehicle info
     {
       $lookup: {
         from: "drivers",
@@ -156,33 +158,36 @@ const getRideDetails = async (rideId: string, decodedToken: JwtPayload) => {
         rideStatus: 1,
         fare: 1,
         statusLogs: 1,
-        createdAt: 1,
-        pickupAddress: 1,
-        pickupCoordinates: 1,
-        destinationAddress: 1,
-        destinationCoordinates: 1,
-        platformEarnings: 1,
         commisionRate: 1,
+        platformEarnings: 1,
+        createdAt: 1,
+
+        // ✅ remap fields
+        pickupCoordinates: "$pickupLoc",
+        destinationCoordinates: "$destLoc",
+        pickupAddress: 1, // must be stored in ride collection
+        destinationAddress: 1, // must be stored in ride collection
+
         rider: {
           _id: "$riderInfo._id",
           name: "$riderInfo.name",
-          phoneNumber: "$riderInfo.phoneNumber",
+          phoneNumber: "$riderInfo.phone", // ✅ your users collection uses "phone"
           email: "$riderInfo.email",
-          role: "$riderInfo.role",
+          role:  "$riderInfo.role" , // convert to "rider"
         },
+
         driver: {
           $cond: {
             if: { $ifNull: ["$driverUserInfo", false] },
             then: {
               _id: "$driverUserInfo._id",
               name: "$driverUserInfo.name",
-              phoneNumber: "$driverUserInfo.phoneNumber",
+              phoneNumber: "$driverUserInfo.phone", // ✅ match users collection
               email: "$driverUserInfo.email",
-              role: "$driverUserInfo.role",
+              role:  "$driverUserInfo.role" ,
               vehicleInfo: "$driverVehicleInfo.vehicleInfo",
               licenseNumber: "$driverVehicleInfo.licenseNumber",
             },
-
             else: null,
           },
         },
@@ -190,28 +195,27 @@ const getRideDetails = async (rideId: string, decodedToken: JwtPayload) => {
     },
   ]);
 
-  // যদি রাইড খুঁজে না পাওয়া যায়
   if (!ride[0]) {
     throw new AppError(404, "This ride does not exist");
   }
-
-  // 👇 ধাপ ৩: একটিমাত্র পরিষ্কার অথোরাইজেশন চেক
+  console.log(ride[0], "ride details");
   const isAdmin = role === UserRole.ADMIN;
   const isRiderOfThisRide = ride[0]?.rider._id?.toString() === userId;
-  // 💡 সেফটি চেক: ride.driver null হতে পারে, তাই optional chaining (?.) ব্যবহার করুন
   const isDriverOfThisRide = ride[0]?.driver?._id?.toString() === userId;
+  const isAnyDriver = role === UserRole.DRIVER;
+if (!isAdmin && !isRiderOfThisRide && !isDriverOfThisRide && !isAnyDriver) {
+  throw new AppError(401, "You are not authorized to view this ride's details.");
+}
 
-  // যদি ব্যবহারকারী অ্যাডমিন না হয়, এবং ওই রাইডের রাইডার বা ড্রাইভারও না4 হয়
-  if (!isAdmin && !isRiderOfThisRide && !isDriverOfThisRide) {
-    throw new AppError(
-      401,
-      "You are not authorized to view this ride's details."
-    );
-  }
-
-  // যদি উপরের শর্ত পাস করে, তাহলে ব্যবহারকারী অনুমোদিত
-  return ride[0];
+  // ✅ wrap response
+  return {
+    statusCode: 200,
+    success: true,
+    message: "Ride Details has been retrive successfully",
+    data: ride[0],
+  };
 };
+
 
 const updateRideStatus = async (
   userId: string,
@@ -438,7 +442,6 @@ const viewEarningHistory = async (userId: string) => {
 const cancelRide = async (
   userId: string,
   rideId: string,
-  cancelStatus: string
 ) => {
   const isUserExist = await User.findById(userId);
 
@@ -490,7 +493,7 @@ const cancelRide = async (
 
   const cancelledRide = await Ride.findByIdAndUpdate(
     rideId,
-    { rideStatus: cancelStatus, cancelledAt: Date.now() },
+    { rideStatus: "cancelled", cancelledAt: Date.now() },
     { new: true, runValidators: true }
   );
 

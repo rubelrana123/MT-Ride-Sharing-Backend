@@ -13,7 +13,7 @@ const applyForDriver = catchAsync( async (req: TRequest, res: TResponse ) => {
     sendResponse(res, {
         statusCode:200,
         success: true,
-        message: "Your application was successfully sent",
+        message: "Your application Under th review. We will notify you once it is approved",
         data: driver
     })
 });
@@ -67,7 +67,7 @@ const updateDriverAvailityStatus = catchAsync( async (req: TRequest, res: TRespo
     const { availability } = req.body;
     const { driverId } = req.params;
     const decodedToken = req.user as JwtPayload;
-
+     console.log(availability, driverId, "decoded-token", )
     const updateDriver = await DriverServices.updateDriverAvailityStatus(driverId, decodedToken, availability);
 
     sendResponse(res, {
@@ -77,11 +77,44 @@ const updateDriverAvailityStatus = catchAsync( async (req: TRequest, res: TRespo
         data: updateDriver
     })
 });
+const getDriverProfile = catchAsync(
+  async (req: TRequest, res: TResponse) => {
+    const decodedToken = req.user as JwtPayload;
+
+    const result = await DriverServices.getDriverProfile(decodedToken.userId);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Driver Profile has been retrive successfully",
+      data: result,
+    });
+  }
+);
+const getIncomingRideRequest = catchAsync(
+  async (req: TRequest, res: TResponse) => {
+    const decodedToken = req.user as JwtPayload;
+    const query = req.query as Record<string, string>;
+     console.log(query,decodedToken.userId, "this is incoming ride request");
+    const result = await DriverServices.getIncomingRideRequest(decodedToken.userId, query);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Incoming Ride Request has been retrive successfully",
+      data: result.data,
+      meta: result.meta,
+    });
+  }
+);
+
 export const DriverController = {
     applyForDriver,
     getAllDriverApplication,
     getAllDriver,
     updateDriverApplicationStatus,
-    updateDriverAvailityStatus
+    updateDriverAvailityStatus,
+    getDriverProfile,
+    getIncomingRideRequest
      
 }

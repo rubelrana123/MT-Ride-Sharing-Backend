@@ -41,7 +41,7 @@ const getMe = async (userId: string) => {
 // Function to get all users with pagination, filtering, searching, and sorting
 const getAllUsers = async (query: Record<string, string>) => {
   //   Create a QueryBuilder instance with the User model and the query
-  const queryBuilder = new QueryBuilder(User.find(), query);
+  const queryBuilder = new QueryBuilder(User.find({ isDeleted: { $ne: true }, role: { $ne: "admin" } }), query);
 
   //http://localhost:5000/api/v1/user/all-users?isVerified=true&sort=1&fields=name,phone&limit=2&page=1
   const users = queryBuilder

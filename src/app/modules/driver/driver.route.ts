@@ -34,5 +34,14 @@ router.patch(
   validateRequest(updateDriveAvailityStatusZodSchema),
   DriverController.updateDriverAvailityStatus
 );
-
+router.get(
+  "/me",
+  checkAuth(UserRole.DRIVER),
+  DriverController.getDriverProfile
+);
+router.get(
+  "/incoming-request",
+  checkAuth(UserRole.DRIVER),
+  DriverController.getIncomingRideRequest
+);
 export const driverRoutes = router;
