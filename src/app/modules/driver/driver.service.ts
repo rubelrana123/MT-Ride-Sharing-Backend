@@ -294,6 +294,32 @@ const getIncomingRideRequest = async (
 
   return { data, meta}
 };
+// const updateDriverStatus = async (
+//   driverId: string,
+//   driverStatus: string,
+//   decodedToken: JwtPayload
+// ) => {
+//   if (decodedToken.role !== UserRole.ADMIN) {
+//     throw new AppError(
+//       401,
+//       "You are not authorized for this action"
+//     );
+//   }
+
+//   const isDriverExist = await Driver.findOne({ driver: driverId });
+
+//   if (!isDriverExist) {
+//     throw new AppError(404, "Driver not found");
+//   }
+
+//   await Driver.findOneAndUpdate(
+//     { driver: driverId },
+//     { driverStatus },
+//     { runValidators: true }
+//   );
+
+//   return true;
+// };
 
 export const DriverServices = {
   applyForDriver,
@@ -302,5 +328,6 @@ export const DriverServices = {
   updateDriverApplicationStatus,
   updateDriverAvailityStatus,
   getDriverProfile,
-  getIncomingRideRequest
+  getIncomingRideRequest,
+  // updateDriverStatus
 };

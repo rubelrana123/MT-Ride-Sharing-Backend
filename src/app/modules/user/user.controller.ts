@@ -1,19 +1,46 @@
  import { sendResponse } from "../../utils/sendRespnse"
 import { catchAsync } from "../../utils/catchAsync"
 import { UserServices } from "./user.service"
-import { TNext, TRequest, TResponse } from "../../types/global"
+import { TRequest, TResponse } from "../../types/global"
 import { JwtPayload } from "jsonwebtoken"
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const createUser = catchAsync(async (req: TRequest, res: TResponse, next: TNext) => {
-    const user = await UserServices.createUser(req.body)
+// Function to create a new user
+const createUser = catchAsync(
+  async (req: TRequest, res: TResponse) => {
+    // logic for creating a user goes here
+    const payload = req.body;
+    const user = await UserServices.createUser(payload);
+
     sendResponse(res, {
-        success: true,
-        statusCode: 200,
-        message: "User Created Successfully",
-        data: user,
-    })
-})
+      statusCode: 201,
+      success: true,
+      message: `${user?.role === "RIDER" ? "Rider" : "Driver"} account has been created successfully`,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        profilePicture: user?.picture,
+        phoneNumber: user?.phone,
+        address: user.address,
+        role: user.role,
+        isVerified: user.isVerified,
+        isActive: user.isActive,
+        isDeleted: user.isDeleted,
+      },
+    });
+  }
+);
+
+// const createUser = catchAsync(async (req: TRequest, res: TResponse, next: TNext) => {
+//     const user = await UserServices.createUser(req.body)
+//     sendResponse(res, {
+//         success: true,
+//         statusCode: 200,
+//         message: "User Created Successfully",
+//         data: user,
+//     })
+// })
 
 const getMe = catchAsync(
   async (req: TRequest, res: TResponse) => {

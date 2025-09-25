@@ -104,6 +104,21 @@ const cancelRide = catchAsync(
     });
   }
 );
+
+const getRiderActiveRide = catchAsync(
+  async (req: TRequest, res: TResponse ) => {
+    const decodedToken = req.user as JwtPayload
+
+    const result = await RideServices.getRiderActiveRide(decodedToken.userId);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "My Active Ride has been retrive successfully",
+      data: result,
+    });
+  }
+);
 export const RideController = {
     requestRide,
     getAllRides,
@@ -111,5 +126,6 @@ export const RideController = {
     getRideDetails,
     viewEarningHistory,
     updateRideStatus,
-    cancelRide
+    cancelRide,
+    getRiderActiveRide
 }

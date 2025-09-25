@@ -29,8 +29,12 @@ export interface IUser {
   isVerified?: boolean;
   isDeleted?: boolean;
   auths: IAuthProvider[];
+  licenseNumber?: string;
+  vehicleInfo?: IVehicleInfo
 }
 
-/* 
-
-*/
+ export interface IVehicleInfo {
+  vehicleType?: string;
+  model?: string;
+  plate?: string;
+}

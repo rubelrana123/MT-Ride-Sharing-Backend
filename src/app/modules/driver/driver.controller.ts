@@ -67,7 +67,7 @@ const updateDriverAvailityStatus = catchAsync( async (req: TRequest, res: TRespo
     const { availability } = req.body;
     const { driverId } = req.params;
     const decodedToken = req.user as JwtPayload;
-     console.log(availability, driverId, "decoded-token", )
+ 
     const updateDriver = await DriverServices.updateDriverAvailityStatus(driverId, decodedToken, availability);
 
     sendResponse(res, {
@@ -107,7 +107,25 @@ const getIncomingRideRequest = catchAsync(
     });
   }
 );
+// const updateDriverStatus = catchAsync(
+//   async (req: TRequest, res: TResponse) => {
+//     const { driverStatus, driverId } = req.body;
+//     const decodedToken = req.user as JwtPayload;
 
+//     await DriverServices.updateDriverStatus(
+//       driverId,
+//       driverStatus,
+//       decodedToken
+//     );
+
+//     sendResponse(res, {
+//       statusCode: 200,
+//       success: true,
+//       message: "Driver status has been updated successfully",
+//       data: null,
+//     });
+//   }
+// );
 export const DriverController = {
     applyForDriver,
     getAllDriverApplication,
@@ -115,6 +133,7 @@ export const DriverController = {
     updateDriverApplicationStatus,
     updateDriverAvailityStatus,
     getDriverProfile,
-    getIncomingRideRequest
+    getIncomingRideRequest,
+    // updateDriverStatus
      
 }

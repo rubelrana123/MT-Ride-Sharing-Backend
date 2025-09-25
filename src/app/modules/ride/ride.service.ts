@@ -500,6 +500,13 @@ const cancelRide = async (
   return cancelledRide;
 };
 
+const getRiderActiveRide = async (riderId: string) => {
+  const activeRide = await Ride.findOne({
+    rider: new Types.ObjectId(riderId),
+    rideStatus: { $in: ["requested", "accepted", "picked_up", "in_transit"] },
+  }).sort({ createdAt: -1 }); // latest active ride if multiple
+  return activeRide;
+};
 export const RideServices = {
   requestRide,
   getAllRides,
@@ -507,5 +514,6 @@ export const RideServices = {
   getRideDetails,
   updateRideStatus,
   viewEarningHistory,
-  cancelRide
+  cancelRide,
+  getRiderActiveRide
 };

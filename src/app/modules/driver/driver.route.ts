@@ -44,4 +44,10 @@ router.get(
   checkAuth(UserRole.DRIVER),
   DriverController.getIncomingRideRequest
 );
+// router.patch(
+//   "/:driverId/driverStatus",
+//   checkAuth(UserRole.ADMIN),
+//   DriverController.updateDriverStatus
+// );
+
 export const driverRoutes = router;

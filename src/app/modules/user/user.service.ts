@@ -4,28 +4,106 @@ import { QueryBuilder } from "../../utils/queryBuilder";
 import { userSearchableFields } from "./user.constants";
 import { IAuthProvider,  IUser, UserRole } from "./user.interface";
 import { User } from "./user.model";
-import bcryptjs from "bcryptjs";
-export const createUser = async (payload: Partial<IUser>) => {
-  const { email, password, ...rest } = payload;
-  const isUserExist = await User.findOne({ email });
-  if (isUserExist) {
-    throw new AppError(409, "User Already Exist");
-  }
-  const hashUserPassword = await bcryptjs.hash(password as string, 10);
-  const authProvider: IAuthProvider = {
-    provider: "credentials",
-    providerId: email as string,
-  };
+import bcrypt from "bcryptjs";
+import { Availability, DriverStatus } from "../driver/driver.interface";
+import mongoose from "mongoose";
+import { envVars } from "../../config/env";
+import { Driver } from "../driver/driver.model";
 
-  const userPayload = {
-    email,
-    password: hashUserPassword,
-    auths: [authProvider],
-    ...rest,
-  };
-  const user = await User.create(userPayload);
-  return user;
+
+const createUser = async (payload: Partial<IUser>) => {
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+    const { name, email, password, role, licenseNumber, vehicleInfo } = payload;
+
+    const isUserExist = await User.findOne({ email });
+
+    //   Check if user already exists
+    if (isUserExist) {
+      throw new AppError(
+        409,
+        "User already exists with this email"
+      );
+    }
+
+    //  password hashing
+    const hashPassword = await bcrypt.hash(
+      password as string,
+      Number(envVars.BCRYPT_SALT_ROUND)
+    );
+
+    //   Create auth provider object with credentials
+    const authProvider: IAuthProvider = {
+      provider: "credentials",
+      providerId: email as string,
+    };
+
+    //   Create user with the provided details
+    //   Note: The password is hashed before saving to the database
+    const user = await User.create(
+      [
+        {
+          name,
+          email,
+          role,
+          password: hashPassword,
+          auths: [authProvider],
+        },
+      ],
+      { session }
+    );
+
+    if (role === UserRole.DRIVER) {
+      const driverData = {
+        driver: user[0]?._id,
+        vehicleInfo: {
+          vehicleType: vehicleInfo?.vehicleType,
+          model: vehicleInfo?.model,
+          plate: vehicleInfo?.plate,
+        },
+        licenseNumber: licenseNumber,
+        availability: Availability.ONLINE,
+        driverStatus: DriverStatus.APPROVED,
+      };
+
+      await Driver.create([driverData], { session });
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return user[0];
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
 };
+// export const createUser = async (payload: Partial<IUser>) => {
+//   const { email, password, ...rest } = payload;
+//   const isUserExist = await User.findOne({ email });
+//   if (isUserExist) {
+//     throw new AppError(409, "User Already Exist");
+//   }
+//   const hashUserPassword = await bcryptjs.hash(password as string, 10);
+//   const authProvider: IAuthProvider = {
+//     provider: "credentials",
+//     providerId: email as string,
+//   };
+
+//   const userPayload = {
+//     email,
+//     password: hashUserPassword,
+//     auths: [authProvider],
+//     ...rest,
+//   };
+//   const user = await User.create(userPayload);
+//   return user;
+// };
+
+
 const getMe = async (userId: string) => {
   const user = await User.findById(userId).select("-password");
   if (!user) {
@@ -41,7 +119,7 @@ const getMe = async (userId: string) => {
 // Function to get all users with pagination, filtering, searching, and sorting
 const getAllUsers = async (query: Record<string, string>) => {
   //   Create a QueryBuilder instance with the User model and the query
-  const queryBuilder = new QueryBuilder(User.find({ isDeleted: { $ne: true }, role: { $ne: "admin" } }), query);
+  const queryBuilder = new QueryBuilder(User.find({ isDeleted: { $ne: true }, UserRole: { $ne: "admin" } }), query);
 
   //http://localhost:5000/api/v1/user/all-users?isVerified=true&sort=1&fields=name,phone&limit=2&page=1
   const users = queryBuilder
@@ -80,7 +158,7 @@ const updateUserInfo = async (
   decodedToken: JwtPayload
 ) => {
   if (
-    decodedToken.role === UserRole.RIDER &&
+    decodedToken.UserRole === UserRole.RIDER &&
     decodedToken.role === UserRole.DRIVER
   ) {
     if (decodedToken.userId !== userId) {
