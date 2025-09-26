@@ -7,21 +7,20 @@ export interface AuthToken {
 export const setAuthCookie = (res: Response, tokenInfo: AuthToken) => {
   if (tokenInfo.accessToken) {
     res.cookie("accessToken", tokenInfo.accessToken, {
-      httpOnly: true, 
-      // secure: envVars.NODE_ENV === "production", // Only sends over HTTPS on production
-      // sameSite: "none"
-        secure: true,
-
+      httpOnly: true, // Safer from XSS
+      secure: true, // O
+      sameSite: "none",
+      maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days expire date
     });
-
   }
+  // Set cookies for refresh tokens
   if (tokenInfo.refreshToken) {
     res.cookie("refreshToken", tokenInfo.refreshToken, {
-      httpOnly: true,  
-      // secure: envVars.NODE_ENV === "production", // Only sends over HTTPS on production
-      // sameSite: "none"
-        secure: true,
-    });   
-
+      httpOnly: true,  // Safer from XSS
+      secure: true,
+      sameSite: "none",
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days expire date
+    });
   }
 };
+ 
