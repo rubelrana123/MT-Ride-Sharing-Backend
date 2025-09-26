@@ -392,31 +392,86 @@ const updateRideStatus = async (
     throw error;
   }
 };
-const viewRideHistroy = async (userId: string) => {
+const viewRideHistroy = async (
+  userId: string,
+  query: Record<string, string>
+) => {
   const isUserExist = await User.findById(userId);
 
   if (!isUserExist) {
     throw new AppError(404, "User not found");
   }
 
-  if (isUserExist._id.toString() !== userId) {
+  if (
+    isUserExist._id.toString() !== userId &&
+    isUserExist.role !== UserRole.RIDER &&
+    isUserExist.role !== UserRole.DRIVER
+  ) {
     throw new AppError(
       401,
       "You are not authorized for this action"
     );
   }
 
-  const rideHistroy = await Ride.find({
-    $and: [
-      { rider: userId },
-      {
-        rideStatus: { $nin: ["accepted", "picked_up", "in_transit"] },
-      },
-    ],
-  });
+  const queryBuilder = new QueryBuilder(
+    Ride.find({
+      $and: [
+        {
+          $or: [{ rider: userId }, { driver: userId }],
+        },
+        {
+          rideStatus: {
+            $nin: ["accepted", "requested", "picked_up", "in_transit"],
+          },
+        },
+      ],
+    }),
+    query
+  );
 
-  return rideHistroy;
+  //   Apply filters, search, sort, fields, and pagination using the QueryBuilder methods
+  const rides = queryBuilder
+    .search(rideSearchableFields)
+    .filter()
+    .sort()
+    .fields()
+    .paginate()
+    .populate("rider", "-password -auths")
+    .populate("driver", "-password -auths");
+
+  //  Execute the query and get the data and metadata
+  const [data, meta] = await Promise.all([
+    rides.build().select("-password -auths"),
+    queryBuilder.getMeta(),
+  ]);
+  return { data, meta };
 };
+
+// const viewRideHistroy = async (userId: string) => {
+//   const isUserExist = await User.findById(userId);
+
+//   if (!isUserExist) {
+//     throw new AppError(404, "User not found");
+//   }
+
+//   if (isUserExist._id.toString() !== userId) {
+//     throw new AppError(
+//       401,
+//       "You are not authorized for this action"
+//     );
+//   }
+
+//   const rideHistroy = await Ride.find({
+//     $and: [
+//       { rider: userId },
+//       {
+//         rideStatus: { $nin: ["accepted", "picked_up", "in_transit"] },
+//       },
+//     ],
+//   });
+
+//   return rideHistroy;
+// };
 const viewEarningHistory = async (userId: string) => {
   const isUserExist = await User.findById(userId);
 
@@ -499,13 +554,102 @@ const cancelRide = async (
   return cancelledRide;
 };
 
-const getRiderActiveRide = async (riderId: string) => {
-  const activeRide = await Ride.findOne({
-    rider: new Types.ObjectId(riderId),
-    rideStatus: { $in: ["requested", "accepted", "picked_up", "in_transit"] },
-  }).sort({ createdAt: -1 }); // latest active ride if multiple
-  return activeRide;
+// const getRiderActiveRide = async (riderId: string) => {
+//   const activeRide = await Ride.findOne({
+//     rider: new Types.ObjectId(riderId),
+//     rideStatus: { $in: ["requested", "accepted", "picked_up", "in_transit"] },
+//   }).sort({ createdAt: -1 }); // latest active ride if multiple
+//   return activeRide;
+// };
+const getMyActiveRide = async (userId: string) => {
+  const activeRideDetails = await Ride.aggregate([
+    {
+      $match: {
+        $or: [
+          {
+            $and: [
+              { rider: new Types.ObjectId(userId) },
+              { rideStatus: { $in: ["requested", "accepted", "picked_up", "in_transit"] } },
+            ],
+          },
+          {
+            $and: [
+              { driver: new Types.ObjectId(userId) },
+              { rideStatus: { $in: ["accepted", "picked_up", "in_transit"] } },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "rider",
+        foreignField: "_id",
+        as: "riderInfo",
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "driver",
+        foreignField: "_id",
+        as: "driverUserInfo",
+      },
+    },
+    {
+      $lookup: {
+        from: "drivers",
+        localField: "driver",
+        foreignField: "driver",
+        as: "driverVehicleInfo",
+      },
+    },
+    { $unwind: "$riderInfo" },
+    { $unwind: { path: "$driverUserInfo", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$driverVehicleInfo", preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        _id: 1,
+        rideStatus: 1,
+        fare: 1,
+        createdAt: 1,
+        pickupLoc: 1,          // ✅ correct field
+        destLoc: 1,            // ✅ correct field
+        distance: 1,
+        rider: {
+          _id: "$riderInfo._id",
+          name: "$riderInfo.name",
+          phoneNumber: "$riderInfo.phoneNumber",
+          email: "$riderInfo.email",
+          role: "$riderInfo.role",
+        },
+        driver: {
+          $cond: {
+            if: { $ifNull: ["$driverUserInfo", false] },
+            then: {
+              _id: "$driverUserInfo._id",
+              name: "$driverUserInfo.name",
+              phoneNumber: "$driverUserInfo.phoneNumber",
+              email: "$driverUserInfo.email",
+              role: "$driverUserInfo.role",
+              vehicleInfo: "$driverVehicleInfo.vehicleInfo",
+              licenseNumber: "$driverVehicleInfo.licenseNumber",
+            },
+            else: null,
+          },
+        },
+      },
+    },
+  ]);
+
+  if (activeRideDetails.length === 0) {
+    return null;
+  }
+
+  return activeRideDetails[0];
 };
+
 export const RideServices = {
   requestRide,
   getAllRides,
@@ -514,5 +658,5 @@ export const RideServices = {
   updateRideStatus,
   viewEarningHistory,
   cancelRide,
-  getRiderActiveRide
+  getMyActiveRide
 };

@@ -66,8 +66,9 @@ const getRideDetails = catchAsync(
 
 const viewRideHistroy = catchAsync(
   async (req: TRequest, res: TResponse) => {
-    const decodedToken = req.user as JwtPayload
-    const result = await RideServices.viewRideHistroy(decodedToken.userId);
+    const decodedToken = req.user as JwtPayload;
+        const query = req.query as Record<string, string>;
+    const result = await RideServices.viewRideHistroy(decodedToken.userId,  query);
 
     sendResponse(res, {
       statusCode: 200,
@@ -105,11 +106,11 @@ const cancelRide = catchAsync(
   }
 );
 
-const getRiderActiveRide = catchAsync(
+const getMyActiveRide = catchAsync(
   async (req: TRequest, res: TResponse ) => {
     const decodedToken = req.user as JwtPayload
 
-    const result = await RideServices.getRiderActiveRide(decodedToken.userId);
+    const result = await RideServices.getMyActiveRide(decodedToken.userId);
 
     sendResponse(res, {
       statusCode: 200,
@@ -127,5 +128,5 @@ export const RideController = {
     viewEarningHistory,
     updateRideStatus,
     cancelRide,
-    getRiderActiveRide
+    getMyActiveRide
 }
