@@ -20,7 +20,7 @@ const credentialsLogin = catchAsync(
       if (!user) {
         return next(new AppError(401, info.message));
       }
-
+     
       const userTokens = createUserToken(user);
       const userObject = user.toObject();
       delete userObject.password;

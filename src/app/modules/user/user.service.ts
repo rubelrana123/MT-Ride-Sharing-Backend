@@ -17,7 +17,7 @@ const createUser = async (payload: Partial<IUser>) => {
   try {
     session.startTransaction();
     const { name, email, password, role, licenseNumber, vehicleInfo } = payload;
-
+    console.log(payload,"payload create user");
     const isUserExist = await User.findOne({ email });
 
     //   Check if user already exists
@@ -54,7 +54,7 @@ const createUser = async (payload: Partial<IUser>) => {
       ],
       { session }
     );
-
+    console.log(user,"here create user")
     if (role === UserRole.DRIVER) {
       const driverData = {
         driver: user[0]?._id,
@@ -67,8 +67,10 @@ const createUser = async (payload: Partial<IUser>) => {
         availability: Availability.ONLINE,
         driverStatus: DriverStatus.APPROVED,
       };
+    console.log(driverData,"here create driverData")
 
-      await Driver.create([driverData], { session });
+     const res =  await Driver.create([driverData], { session });
+     console.log(res,"driver res")
     }
 
     await session.commitTransaction();
@@ -157,12 +159,12 @@ const updateUserInfo = async (
   payload: Partial<IUser>,
   decodedToken: JwtPayload
 ) => {
-  if (
-    decodedToken.UserRole === UserRole.RIDER &&
-    decodedToken.role === UserRole.DRIVER
-  ) {
+  if (decodedToken.role === UserRole.RIDER && decodedToken.role === UserRole.DRIVER) {
     if (decodedToken.userId !== userId) {
-      throw new AppError(401, "You are not authorized for this action");
+      throw new AppError(
+        401,
+        "You are not authorized for this action"
+      );
     }
   }
 
@@ -175,37 +177,49 @@ const updateUserInfo = async (
   if (payload.email) {
     throw new AppError(400, "Email cannot be updated");
   }
-  if (payload.password) {
-    throw new AppError(400, "password cannot be updated here");
-  }
+
   if (payload.role) {
-    if (
-      decodedToken.role === UserRole.RIDER &&
-      decodedToken.role === UserRole.DRIVER
-    ) {
-      throw new AppError(401, "You are not authorized for this action");
+    if (decodedToken.role === UserRole.RIDER && decodedToken.role === UserRole.DRIVER) {
+      throw new AppError(
+        401,
+        "You are not authorized for this action"
+      );
     }
 
     const isSelf = isUserExist.email === decodedToken.email;
     const tryingToDowngradeSelf =
       payload.role === UserRole.RIDER || payload.role === UserRole.DRIVER;
 
-    if (
-      isSelf &&
-      decodedToken.role === UserRole.ADMIN &&
-      tryingToDowngradeSelf
-    ) {
-      throw new AppError(403, "You cann't chang your own role");
+    if (isSelf && decodedToken.role === UserRole.ADMIN && tryingToDowngradeSelf) {
+      throw new AppError(
+        403,
+        "You cann't chang your own role"
+      );
     }
   }
 
   if (payload.isActive || payload.isDeleted || payload.isVerified) {
-    if (
-      decodedToken.role === UserRole.RIDER &&
-      decodedToken.User === UserRole.DRIVER
-    ) {
-      throw new AppError(401, "You are not authorized for this action");
+    if (decodedToken.role === UserRole.RIDER && decodedToken.role === UserRole.DRIVER) {
+      throw new AppError(
+        401,
+        "You are not authorized for this action"
+      );
     }
+  }
+
+
+  if (isUserExist?.role === UserRole.DRIVER) {
+    const driverData = {
+      vehicleInfo: {
+        vehicleType: payload?.vehicleInfo?.vehicleType,
+        model: payload?.vehicleInfo?.model,
+        plate: payload?.vehicleInfo?.plate,
+      },
+      licenseNumber: payload?.licenseNumber,
+    };
+
+
+   await Driver.findOneAndUpdate( { driver: userId }, driverData );
   }
 
   const updateUser = await User.findByIdAndUpdate(userId, payload, {
@@ -215,6 +229,71 @@ const updateUserInfo = async (
 
   return updateUser;
 };
+
+
+// const updateUserInfo = async (
+//   userId: string,
+//   payload: Partial<IUser>,
+//   decodedToken: JwtPayload
+// ) => {
+//   if (
+//     decodedToken.UserRole === UserRole.RIDER &&
+//     decodedToken.role === UserRole.DRIVER
+//   ) {
+//     if (decodedToken.userId !== userId) {
+//       throw new AppError(401, "You are not authorized for this action");
+//     }
+//   }
+
+//   const isUserExist = await User.findById(userId);
+
+//   if (!isUserExist) {
+//     throw new AppError(404, "User not found");
+//   }
+
+//   if (payload.email) {
+//     throw new AppError(400, "Email cannot be updated");
+//   }
+//   if (payload.password) {
+//     throw new AppError(400, "password cannot be updated here");
+//   }
+//   if (payload.role) {
+//     if (
+//       decodedToken.role === UserRole.RIDER &&
+//       decodedToken.role === UserRole.DRIVER
+//     ) {
+//       throw new AppError(401, "You are not authorized for this action");
+//     }
+
+//     const isSelf = isUserExist.email === decodedToken.email;
+//     const tryingToDowngradeSelf =
+//       payload.role === UserRole.RIDER || payload.role === UserRole.DRIVER;
+
+//     if (
+//       isSelf &&
+//       decodedToken.role === UserRole.ADMIN &&
+//       tryingToDowngradeSelf
+//     ) {
+//       throw new AppError(403, "You cann't chang your own role");
+//     }
+//   }
+
+//   if (payload.isActive || payload.isDeleted || payload.isVerified) {
+//     if (
+//       decodedToken.role === UserRole.RIDER &&
+//       decodedToken.User === UserRole.DRIVER
+//     ) {
+//       throw new AppError(401, "You are not authorized for this action");
+//     }
+//   }
+
+//   const updateUser = await User.findByIdAndUpdate(userId, payload, {
+//     new: true,
+//     runValidators: true,
+//   });
+
+//   return updateUser;
+// };
 
  
 const updateUserStatus = async (

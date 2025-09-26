@@ -61,6 +61,8 @@ if (exists) {
   return rideRequested;
 };
 
+
+
  const getAllRides = async (userId: string, query: Record<string, string>) => {
   const isUserExist = await User.findById(userId);
 
@@ -109,9 +111,6 @@ if (exists) {
 
 const getRideDetails = async (rideId: string, decodedToken: JwtPayload) => {
   const { userId, role } = decodedToken;
-console.log(userId, "this is login user id");
-console.log(role, "this is login user role");
-console.log(rideId, "this is ride id from params");
 
   const ride = await Ride.aggregate([
     { $match: { _id: new Types.ObjectId(rideId) } },

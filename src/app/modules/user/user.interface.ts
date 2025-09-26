@@ -23,8 +23,8 @@ export interface IUser {
   phone?: string;
   picture?: string;
   address?: string;
-  role: UserRole;
-  //  status?: string;
+  role?: UserRole;
+  status?: string;
   isActive?: IsActive;
   isVerified?: boolean;
   isDeleted?: boolean;
