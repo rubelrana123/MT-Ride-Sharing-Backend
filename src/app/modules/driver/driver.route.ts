@@ -44,6 +44,8 @@ router.get(
   checkAuth(UserRole.DRIVER),
   DriverController.getIncomingRideRequest
 );
+// router.get("/myActiveRide", checkAuth(UserRole.RIDER, UserRole.DRIVER), RideController.getDriverActiveRide)
+
 // router.patch(
 //   "/:driverId/driverStatus",
 //   checkAuth(UserRole.ADMIN),

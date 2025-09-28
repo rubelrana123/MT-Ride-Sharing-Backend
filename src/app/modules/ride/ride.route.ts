@@ -11,5 +11,5 @@ router.get("/:rideId/details", checkAuth(UserRole.ADMIN,UserRole.SUPER_ADMIN, Us
 router.get("/earnings", checkAuth(UserRole.DRIVER), RideController.viewEarningHistory)
 router.patch("/:rideId/status",checkAuth(UserRole.DRIVER, UserRole.ADMIN, UserRole.SUPER_ADMIN), RideController.updateRideStatus);
 router.patch("/:rideId/cancel", checkAuth(UserRole.RIDER), RideController.cancelRide);
-router.get("/myActiveRide", checkAuth(UserRole.RIDER, UserRole.DRIVER), RideController.getMyActiveRide)
+router.get("/active-ride", checkAuth(UserRole.RIDER, UserRole.DRIVER), RideController.getMyActiveRide)
 export const rideRoutes = router;

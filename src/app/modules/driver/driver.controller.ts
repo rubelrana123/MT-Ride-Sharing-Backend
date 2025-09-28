@@ -134,6 +134,7 @@ export const DriverController = {
     updateDriverAvailityStatus,
     getDriverProfile,
     getIncomingRideRequest,
+    // getDriverActiveRide,
     // updateDriverStatus
      
 }
