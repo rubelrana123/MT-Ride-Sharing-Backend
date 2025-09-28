@@ -10,6 +10,7 @@ import passport from "passport";
 import { AuthServices } from "./auth.service";
 import { JwtPayload } from "jsonwebtoken";
 import { TNext, TRequest, TResponse } from "../../types/global";
+import { envVars } from "../../config/env";
 
 const credentialsLogin = catchAsync(
   async (req: TRequest, res: TResponse, next: TNext) => {
@@ -58,25 +59,29 @@ const getNewAccessToken = catchAsync(async (req: TRequest, res: TResponse) => {
   });
 });
 
-const logout = catchAsync(async (req: TRequest, res: TResponse) => {
-  res.clearCookie("accessToken", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-  });
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-  });
+// This function handles log out
+const logout = catchAsync(
+  async (req: TRequest, res: TResponse) => {
+    res.clearCookie("accessToken", {
+      httpOnly: true, // Safer from XSS
+      secure: envVars.NODE_ENV === "production", // Only sends over HTTPS on production
+      sameSite: "none",
+    });
 
-  sendResponse(res, {
-    success: true,
-    statusCode: 200,
-    message: "User logout successfully",
-    data: null,
-  });
-});
+    res.clearCookie("refreshToken", {
+      httpOnly: true, // Safer from XSS
+      secure: envVars.NODE_ENV === "production", // Only sends over HTTPS on production
+      sameSite: "none",
+    });
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "User Logged Out Successfully",
+      data: null,
+    });
+  }
+);
 
 // This function handles changing the user's password.
 const resetPassword = catchAsync(

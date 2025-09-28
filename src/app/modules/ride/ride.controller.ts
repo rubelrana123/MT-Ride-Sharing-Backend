@@ -23,6 +23,7 @@ const  updateRideStatus = catchAsync(async (req: TRequest, res: TResponse ) => {
     const rideId = req.params.rideId;
     const status = req.body.status;
      const decodedToken = req.user as JwtPayload
+     console.log( req.body, "req body here")
     const updateStatus = await RideServices.updateRideStatus(decodedToken.userId,rideId , status)
     sendResponse(res, {
         success: true,
@@ -37,6 +38,7 @@ const getAllRides = catchAsync(
   async (req: TRequest, res: TResponse ) => {
     const query = req.query as Record<string, string>;
     const decodedToken = req.user as JwtPayload
+    console.log("get all rides query", query)
     const result = await RideServices.getAllRides(decodedToken.userId, query);
 
     sendResponse(res, {
@@ -68,6 +70,7 @@ const viewRideHistroy = catchAsync(
   async (req: TRequest, res: TResponse) => {
     const decodedToken = req.user as JwtPayload;
         const query = req.query as Record<string, string>;
+        // console.log(query, decodedToken)
     const result = await RideServices.viewRideHistroy(decodedToken.userId,  query);
 
     sendResponse(res, {

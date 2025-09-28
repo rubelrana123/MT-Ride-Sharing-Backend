@@ -20,6 +20,7 @@ export interface IRide {
   driver?: Types.ObjectId; // Reference to Driver, optional at request time
   pickupLoc: IRideLocation;
   destLoc: IRideLocation;
+  rideType : string;
   distance : string;
   fare: string;
   rideStatus: RideStatus;

@@ -1,1 +1,1 @@
-export const rideSearchableFields = ["fare","status"]
+export const rideSearchableFields = ["rideType","rideStatus"]

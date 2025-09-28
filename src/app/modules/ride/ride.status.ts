@@ -10,8 +10,8 @@ or
 */
 
 export const rideStatusFlow: Record<RideStatus, RideStatus[]> = {
-  [RideStatus.REQUESTED]: [RideStatus.ACCEPTED, RideStatus.REJECTED],
-  [RideStatus.ACCEPTED]: [RideStatus.PICKED_UP],
+  [RideStatus.REQUESTED]: [RideStatus.ACCEPTED, RideStatus.REJECTED, RideStatus.CANCELLED],
+  [RideStatus.ACCEPTED]: [RideStatus.PICKED_UP, RideStatus.CANCELLED],
   [RideStatus.PICKED_UP]: [RideStatus.IN_TRANSIT],
   [RideStatus.IN_TRANSIT]: [RideStatus.COMPLETED],
   [RideStatus.COMPLETED]: [],
@@ -22,8 +22,15 @@ export const rideStatusFlow: Record<RideStatus, RideStatus[]> = {
 
 
 
-export const DriverActiveRide = [
+export const ActiveRide = [
   RideStatus.ACCEPTED,
   RideStatus.PICKED_UP,
   RideStatus.IN_TRANSIT,
-]
+];
+
+
+export const statusesThatNeedVerification = [
+  RideStatus.PICKED_UP,
+  RideStatus.IN_TRANSIT,
+  RideStatus.COMPLETED,
+];

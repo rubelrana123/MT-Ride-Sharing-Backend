@@ -15,7 +15,7 @@ passport.use(
       passwordField: "password",
     },
     async (email: string, password: string, done: any) => {
-      console.log("LocalStrategy called with email:", email, "and password:", password);
+      // console.log("LocalStrategy called with email:", email, "and password:", password);
       try {
         const isUserExist = await User.findOne({ email });
 

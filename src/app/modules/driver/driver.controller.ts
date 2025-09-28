@@ -95,7 +95,7 @@ const getIncomingRideRequest = catchAsync(
   async (req: TRequest, res: TResponse) => {
     const decodedToken = req.user as JwtPayload;
     const query = req.query as Record<string, string>;
-     console.log(query,decodedToken.userId, "this is incoming ride request");
+    //  console.log(query,decodedToken.userId, "this is incoming ride request");
     const result = await DriverServices.getIncomingRideRequest(decodedToken.userId, query);
 
     sendResponse(res, {

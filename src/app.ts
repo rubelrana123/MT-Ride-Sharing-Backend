@@ -17,7 +17,7 @@ app.use(cors({
 
 app.use(cookieParser());
 app.use(express.json());
-
+app.set("trust proxy", 1)
 // ✅ Then session & passport
 app.use(expressSession({
   secret: envVars.EXPRESS_SESSION_SECRET,

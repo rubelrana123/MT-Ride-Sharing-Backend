@@ -17,7 +17,7 @@ const createUser = async (payload: Partial<IUser>) => {
   try {
     session.startTransaction();
     const { name, email, password, role, licenseNumber, vehicleInfo } = payload;
-    console.log(payload,"payload create user");
+    // console.log(payload,"payload create user");
     const isUserExist = await User.findOne({ email });
 
     //   Check if user already exists
@@ -54,7 +54,7 @@ const createUser = async (payload: Partial<IUser>) => {
       ],
       { session }
     );
-    console.log(user,"here create user")
+    // console.log(user,"here create user")
     if (role === UserRole.DRIVER) {
       const driverData = {
         driver: user[0]?._id,
@@ -67,10 +67,9 @@ const createUser = async (payload: Partial<IUser>) => {
         availability: Availability.ONLINE,
         driverStatus: DriverStatus.APPROVED,
       };
-    console.log(driverData,"here create driverData")
-
-     const res =  await Driver.create([driverData], { session });
-     console.log(res,"driver res")
+    // console.log(driverData,"here create driverData")
+ await Driver.create([driverData], { session });
+    //  console.log(res,"driver res")
     }
 
     await session.commitTransaction();
@@ -121,7 +120,7 @@ const getMe = async (userId: string) => {
 // Function to get all users with pagination, filtering, searching, and sorting
 const getAllUsers = async (query: Record<string, string>) => {
   //   Create a QueryBuilder instance with the User model and the query
-  const queryBuilder = new QueryBuilder(User.find({ isDeleted: { $ne: true }, UserRole: { $ne: "admin" } }), query);
+  const queryBuilder = new QueryBuilder(User.find({ role: { $nin: ["ADMIN", "SUPER_ADMIN"] } }), query);
 
   //http://localhost:5000/api/v1/user/all-users?isVerified=true&sort=1&fields=name,phone&limit=2&page=1
   const users = queryBuilder

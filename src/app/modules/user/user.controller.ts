@@ -131,7 +131,7 @@ const updateUserStatus = catchAsync(
   async (req: TRequest, res: TResponse) => {
     const payload = req.body;
     const decodedToken = req.user as JwtPayload;
-    console.log(decodedToken, "decodedToken", payload, "payload", req.params);
+    // console.log(decodedToken, "decodedToken", payload, "payload", req.params);
     const user = await UserServices.updateUserStatus(
       payload.userId,
       payload.isActive,

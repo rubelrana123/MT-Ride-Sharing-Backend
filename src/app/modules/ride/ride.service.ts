@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
  
 import { IRide, RideStatus } from "./ride.interface";
 import { Ride } from "./ride.model";
@@ -10,7 +11,7 @@ import { calculateFare } from "../../utils/calculateFare";
 import { calculateDistanceInKm } from "../../utils/calculateDistanceInKm";
 import { Driver } from "../driver/driver.model";
 import dayjs from "dayjs";
-import { DriverActiveRide, rideStatusFlow } from "./ride.status";
+import { ActiveRide, rideStatusFlow, statusesThatNeedVerification } from "./ride.status";
 import { Availability, DriverStatus } from "../driver/driver.interface";
 import { Types } from "mongoose";
 import { JwtPayload } from "jsonwebtoken";
@@ -46,8 +47,9 @@ const requestRide = async (payload: Partial<IRide>, userId: string) => {
 if (exists) {
   throw new Error("Ride with same pickup and destination already exists");
 }
+
   const distance = calculateDistanceInKm(lat1, long1, lat2, long2);
-  const totalFare = calculateFare(distance);
+  const totalFare = calculateFare(distance, payload.rideType as string) ;
 
   const rideData = {
     ...payload,
@@ -62,51 +64,50 @@ if (exists) {
 };
 
 
-
- const getAllRides = async (userId: string, query: Record<string, string>) => {
+export const getAllRides = async (userId: string, query: Record<string, string>) => {
+  // 1️⃣ Check if user exists
   const isUserExist = await User.findById(userId);
+  if (!isUserExist) throw new AppError(404, "User not found");
 
-  // check user is exist or not
-  if (!isUserExist) {
-    throw new AppError(404, "User not found");
-  }
-
-  // check user are valid or not
+  // 2️⃣ Check authorization
   if (isUserExist._id.toString() !== userId) {
-    throw new AppError(
-      401,
-      "You are not authorized for this action"
-    );
+    throw new AppError(401, "You are not authorized for this action");
   }
 
-    //   Create a QueryBuilder instance with the User model and the query
-    const queryBuilder = new QueryBuilder(Ride.find(), query);
-  
-    //   Apply filters, search, sort, fields, and pagination using the QueryBuilder methods
-    const users = queryBuilder
-      .search(rideSearchableFields)
-      .filter()
-      .sort()
-      .fields()
-      .paginate()
-      .populate("rider", "-password")
-      .populate("driver", "-password");
-  
-  
-      
-    //  Execute the query and get the data and metadata
-    const [data, meta] = await Promise.all([
-      users.build().select("-password -auths"),
-      queryBuilder.getMeta(),
-    ]);
-  
+  // 3️⃣ Extract minFare/maxFare from query
+  const { minFare, maxFare, ...otherQuery } = query;
 
-  // const allRides = await Ride.find().populate("rider", "-password").populate("driver", "-password");
+  // 4️⃣ Create QueryBuilder instance for other query params
+  const queryBuilder = new QueryBuilder(Ride.find(), otherQuery);
 
+  // 5️⃣ Apply QueryBuilder methods
+  const ridesQuery = queryBuilder
+    .filter()
+    .search(rideSearchableFields) // add other searchable fields if needed
+    .sort()
+    .fields()
+    .paginate()
+    .populate("rider", "-password -auths")
+    .populate("driver", "-password");
 
-  return {
-    data, meta
+  // 6️⃣ Execute query
+  let data = await ridesQuery.build();
+
+  // 7️⃣ Apply minFare/maxFare filtering (controller-level)
+  if (minFare || maxFare) {
+    const min = minFare ? Number(minFare) : 0;
+    const max = maxFare ? Number(maxFare) : Infinity;
+
+    data = data.filter((ride: any) => {
+      const numericFare = Number(ride.fare.split(" ")[0]); // "166 BDT" -> 166
+      return numericFare >= min && numericFare <= max;
+    });
   }
+
+  // 8️⃣ Get metadata
+  const meta = await queryBuilder.getMeta();
+
+  return { data, meta };
 };
 
 const getRideDetails = async (rideId: string, decodedToken: JwtPayload) => {
@@ -162,15 +163,15 @@ const getRideDetails = async (rideId: string, decodedToken: JwtPayload) => {
         createdAt: 1,
 
         // ✅ remap fields
-        pickupCoordinates: "$pickupLoc",
-        destinationCoordinates: "$destLoc",
+        pickupLoc: "$pickupLoc",
+        destLoc: "$destLoc",
         pickupAddress: 1, // must be stored in ride collection
         destinationAddress: 1, // must be stored in ride collection
 
         rider: {
           _id: "$riderInfo._id",
           name: "$riderInfo.name",
-          phoneNumber: "$riderInfo.phone", // ✅ your users collection uses "phone"
+          phone: "$riderInfo.phone", // ✅ your users collection uses "phone"
           email: "$riderInfo.email",
           role:  "$riderInfo.role" , // convert to "rider"
         },
@@ -181,7 +182,7 @@ const getRideDetails = async (rideId: string, decodedToken: JwtPayload) => {
             then: {
               _id: "$driverUserInfo._id",
               name: "$driverUserInfo.name",
-              phoneNumber: "$driverUserInfo.phone", // ✅ match users collection
+              phone: "$driverUserInfo.phone", // ✅ match users collection
               email: "$driverUserInfo.email",
               role:  "$driverUserInfo.role" ,
               vehicleInfo: "$driverVehicleInfo.vehicleInfo",
@@ -215,39 +216,42 @@ if (!isAdmin && !isRiderOfThisRide && !isDriverOfThisRide && !isAnyDriver) {
   };
 };
 
-
 const updateRideStatus = async (
   userId: string,
   rideId: string,
   newStatus: RideStatus
 ) => {
-  // 1 Start a MongoDB session and transaction.
+  console.log(userId, rideId,newStatus)
   const session = await Ride.startSession();
 
   try {
     session.startTransaction();
-    // 2 Check if the user exists. If not, throw an error.
+
     const isUserExist = await User.findById(userId);
+
+    // check user is exist or not
     if (!isUserExist) {
       throw new AppError(404, "User not found");
     }
 
-    //3. Validate that the user ID matches the one provided (authorization check).
-    if (isUserExist._id.toString() !== userId) {
+    // check user are valid or not
+    if (isUserExist.role !== UserRole.ADMIN && isUserExist.role !== UserRole.DRIVER) {
       throw new AppError(
-        401,
+       401,
         "You are not authorized for this action"
       );
     }
-  //  4. Check if the ride exists. If not, throw an error.
+
     const isRideExist = await Ride.findById(rideId);
+
+    // checking ride exist or not
     if (!isRideExist) {
       throw new AppError(404, "Ride not found");
     }
-   //5. Find the driver record associated with the user ID.
+
     const isDriverExist = await Driver.findOne({ driver: userId });
 
-    //6. Verify the driver’s status (cannot be PENDING, REJECTED, or SUSPEND).
+    // checking if driver status pending or rejected or suspend
     if (
       isDriverExist &&
       (isDriverExist.driverStatus === DriverStatus.PENDING ||
@@ -260,7 +264,7 @@ const updateRideStatus = async (
       );
     }
 
-    //7. Ensure the driver is not OFFLINE.
+    // checking driver is online or offline
     if (isDriverExist && isDriverExist.availability === Availability.OFFLINE) {
       throw new AppError(
         400,
@@ -268,17 +272,13 @@ const updateRideStatus = async (
       );
     }
 
-    if (
-      RideStatus.REJECTED === newStatus ||
-      RideStatus.ACCEPTED === newStatus
-    ) {
-      //8 Check if the driver already has an active ride with a non-completed status
+    if (RideStatus.ACCEPTED === newStatus) {
       const isDriverHaveActiveRide = await Ride.findOne({
         driver: userId,
-        rideStatus: { $in: DriverActiveRide }, // accepted, rejected, in-transmit
+        rideStatus: { $in: ActiveRide },
       });
 
-     
+      // Check if the driver already has an active ride with a non-completed status
       if (isDriverHaveActiveRide) {
         throw new AppError(
           400,
@@ -287,100 +287,111 @@ const updateRideStatus = async (
       }
     }
 
-    // prevent ride cancell by driver
-    if (RideStatus.CANCELLED === newStatus) {
-      throw new AppError(400, "You cann't cancel any ride");
-    }
-
     // check if rider already cancelled
     if (isRideExist.rideStatus === RideStatus.CANCELLED) {
       throw new AppError(
         400,
-        `This ride has already been '${isRideExist.rideStatus}' by the rider.`
+        `This ride has been already '${isRideExist.rideStatus}' by the rider.`
       );
     }
-
-    // Check that the requested status transition is valid using rideStatusFlow.
-    if (!rideStatusFlow[isRideExist.rideStatus].includes(newStatus)) {
+    // check if rider already cancelled
+    if (isRideExist.rideStatus === RideStatus.REJECTED) {
       throw new AppError(
         400,
-        `Invalid status transition from '${isRideExist.rideStatus}' to '${newStatus}'.`
+        `This ride has been already '${isRideExist.rideStatus}'`
       );
     }
 
-    //  Prepare an update object and get the current timestamp in Dhaka timezone.
-    let updateRideData;
-    const nowInDhaka = dayjs().tz("Asia/Dhaka").format();
-
-    // . Handle ACCEPTED and REJECTED: assign driver, update status, record timestamp.
-    if (RideStatus.REJECTED === newStatus) {
-      updateRideData = {
-        driver: userId,
-        rideStatus: newStatus,
-        acceptedAt: nowInDhaka,
-      };
-    }
-    if (RideStatus.ACCEPTED === newStatus) {
-      updateRideData = {
-        driver: userId,
-        rideStatus: newStatus,
-        acceptedAt: nowInDhaka,
-      };
-    }
-
-    // If the ride is already accepted, verify that the current user is the assigned driver
-    if (isRideExist.rideStatus === RideStatus.ACCEPTED) {
-      if ((isRideExist.driver as Types.ObjectId).toString() !== userId) {
+    // Ensure the current ride status is allowed to transition to the requested new status
+    if (isUserExist.role !== UserRole.ADMIN) {
+      if (!rideStatusFlow[isRideExist.rideStatus].includes(newStatus)) {
         throw new AppError(
-          
           400,
+          `Invalid status transition from '${isRideExist.rideStatus}' to '${newStatus}'.`
+        );
+      }
+    }
+
+    // Checking already have any driver assign for this ride
+    if (statusesThatNeedVerification.includes(newStatus)) {
+      const isAssignedDriver = isRideExist.driver
+        ? isRideExist.driver.toString() === userId
+        : false;
+      const isAdmin = isUserExist.role === UserRole.ADMIN;
+      if (!isAssignedDriver && !isAdmin) {
+        throw new AppError(
+          401,
           `You are not assign to this ride`
         );
       }
     }
 
-    // Set ride status and record timestamp (e.g., pickedUpAt, inTransitAt, completedAt) based on the new status
-    switch (newStatus) {
-      case RideStatus.PICKED_UP:
-        updateRideData = {
-          rideStatus: newStatus,
-          pickedupAt: nowInDhaka,
-        };
-        break;
-      case RideStatus.IN_TRANSIT:
-        updateRideData = {
-          rideStatus: newStatus,
-          inTransitAt: nowInDhaka,
-        };
-        break;
-      case RideStatus.COMPLETED:
-        updateRideData = {
-          rideStatus: newStatus,
-          completedAt: nowInDhaka,
-        };
-        // driver,driverStatus ,earnings
-        //On COMPLETED, update driver’s earnings (currently overwrites earnings).
-        await Driver.findOneAndUpdate(
-          { driver: userId },
-          { earnings: isRideExist?.fare },
-          { session }
-        );
-        break;
-      default:
-        break;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateQuery: any = {
+      $set: {
+        rideStatus: newStatus,
+        driverName: isUserExist?.name,
+      },
+      $push: {
+        statusLogs: [
+          {
+            status: newStatus,
+            timeStamp: dayjs().tz("Asia/Dhaka").format(),
+          },
+        ],
+      },
+    };
+
+    //  Assgining a driver for accpeted or rejected status
+    if (
+      newStatus === RideStatus.ACCEPTED ||
+      newStatus === RideStatus.REJECTED ||
+      newStatus === RideStatus.CANCELLED
+    ) {
+      updateQuery.$set.driver = userId;
     }
 
-    /*
-    imagine ride
-     IRide {,rider,driver?,pickupLoc,destLoc,distance ,fare,rideStatus,requestedAt,cancelledAt,
-     rejectedAt,acceptedAt,completedAt,pickedupAt,inTransitAt }
-      */
-    //. Update the ride document in the database.
-    const rideStatusUpdate = await Ride.findByIdAndUpdate(
-      rideId,
-      updateRideData,
-      { new: true, runValidators: true, session }
-    );
+    // update driver earning when ride is compoeted
+if (newStatus === RideStatus.COMPLETED) {
+  // get numeric part of fare ("166 BDT" -> 166)
+  const fareAmount = parseInt(isRideExist.fare.replace(/[^\d]/g, ""), 10) || 0;
+
+  // fetch driver
+  const driver = await Driver.findOne({ driver: isRideExist.driver });
+
+  // get numeric part of existing earnings ("150 BDT" -> 150)
+  const currentEarnings = driver?.earnings
+    ? parseInt(String(driver.earnings).replace(/[^\d]/g, ""), 10)
+    : 0;
+
+  // calculate new total
+  const updatedEarnings = currentEarnings + fareAmount;
+
+  // update with formatted string (e.g., "316 BDT")
+  await Driver.findOneAndUpdate(
+    { driver: isRideExist.driver },
+    { $set: { earnings: `${updatedEarnings} BDT` } },
+    { session }
+  );
+}
+
+    // updating ride status
+    const rideStatusUpdate = await Ride.findByIdAndUpdate(rideId, updateQuery, {
+      new: true,
+      runValidators: true,
+      session,
+    });
+
+    // if (
+    //   rideStatusUpdate?.rideStatus === "completed" ||
+    //   rideStatusUpdate?.rideStatus === "cancelled"
+    // ) {
+    //   io.to(rideId).emit("ride_Status_updated", {
+    //     rideId,
+    //     newStatus,
+    //     rideDetails: rideStatusUpdate,
+    //   });
+    // }
 
     await session.commitTransaction();
     await session.endSession();
@@ -392,6 +403,7 @@ const updateRideStatus = async (
     throw error;
   }
 };
+
 const viewRideHistroy = async (
   userId: string,
   query: Record<string, string>
@@ -407,29 +419,23 @@ const viewRideHistroy = async (
     isUserExist.role !== UserRole.RIDER &&
     isUserExist.role !== UserRole.DRIVER
   ) {
-    throw new AppError(
-      401,
-      "You are not authorized for this action"
-    );
+    throw new AppError(401, "You are not authorized for this action");
   }
 
-  const queryBuilder = new QueryBuilder(
-    Ride.find({
-      $and: [
-        {
-          $or: [{ rider: userId }, { driver: userId }],
-        },
-        {
-          rideStatus: {
-            $nin: ["accepted", "requested", "picked_up", "in_transit"],
-          },
-        },
-      ],
-    }),
-    query
-  );
+  // Rider vs Driver আলাদা query
+  let findQuery = {};
 
-  //   Apply filters, search, sort, fields, and pagination using the QueryBuilder methods
+  if (isUserExist.role === UserRole.RIDER) {
+    // Rider → তার সব ride (requested সহ)
+    findQuery = { rider: userId };
+  } else if (isUserExist.role === UserRole.DRIVER) {
+    // Driver → তার সব assign করা ride
+    findQuery = { driver: userId };
+  }
+
+  const queryBuilder = new QueryBuilder(Ride.find(findQuery), query);
+
+  // Apply filters, search, sort, fields, and pagination
   const rides = queryBuilder
     .search(rideSearchableFields)
     .filter()
@@ -439,13 +445,70 @@ const viewRideHistroy = async (
     .populate("rider", "-password -auths")
     .populate("driver", "-password -auths");
 
-  //  Execute the query and get the data and metadata
+  // Execute query & metadata একসাথে আনা
   const [data, meta] = await Promise.all([
     rides.build().select("-password -auths"),
     queryBuilder.getMeta(),
   ]);
+
   return { data, meta };
 };
+
+
+// const viewRideHistroy = async (
+//   userId: string,
+//   query: Record<string, string>
+// ) => {
+//   const isUserExist = await User.findById(userId);
+// console.log(userId, query, "from pservice histo")
+//   if (!isUserExist) {
+//     throw new AppError(404, "User not found");
+//   }
+
+//   if (
+//     isUserExist._id.toString() !== userId &&
+//     isUserExist.role !== UserRole.RIDER &&
+//     isUserExist.role !== UserRole.DRIVER
+//   ) {
+//     throw new AppError(
+//       401,
+//       "You are not authorized for this action"
+//     );
+//   }
+
+//   const queryBuilder = new QueryBuilder(
+//     Ride.find({
+//       $and: [
+//         {
+//           $or: [{ rider: userId }, { driver: userId }],
+//         },
+//         {
+//           rideStatus: {
+//             $nin: ["accepted", "requested", "picked_up", "in_transit"],
+//           },
+//         },
+//       ],
+//     }),
+//     query
+//   );
+
+//   //   Apply filters, search, sort, fields, and pagination using the QueryBuilder methods
+//   const rides = queryBuilder
+//     .search(rideSearchableFields)
+//     .filter()
+//     .sort()
+//     .fields()
+//     .paginate()
+//     .populate("rider", "-password -auths")
+//     .populate("driver", "-password -auths");
+
+//   //  Execute the query and get the data and metadata
+//   const [data, meta] = await Promise.all([
+//     rides.build().select("-password -auths"),
+//     queryBuilder.getMeta(),
+//   ]);
+//   return { data, meta };
+// };
 
 // const viewRideHistroy = async (userId: string) => {
 //   const isUserExist = await User.findById(userId);

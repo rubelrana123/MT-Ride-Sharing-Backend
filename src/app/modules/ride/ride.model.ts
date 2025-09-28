@@ -39,6 +39,10 @@ const rideSchema = new Schema<IRide>(
       type: String,
       required: true,
     },
+    rideType: {
+      type: String,
+      required: true,
+    },
     fare: {
       type: String,
       required: true,
