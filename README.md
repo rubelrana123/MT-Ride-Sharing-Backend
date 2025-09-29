@@ -7,17 +7,16 @@ MyTrip Ride Sharing Backend is a RESTful API service for managing ride sharing o
  Postman Documentation: https://documenter.getpostman.com/view/27456550/2sB3BHmUHm
  Video Explanation: https://www.youtube.com/watch?v=yDaFX2kP4Aw
  ```
-# API Testing Password : 
- Super Admin : 
- {
-    "email" : "super@gmail.com",
-    "password" : "12345678"
-}
-Driver : 
-{
-    "email": "avida@gmail.com",
-    "password": "DriverPass123!"
-}
+## 🔑 Test Credentials
+
+| Role       | Email                    | Password    |
+| :--------- | :----------------------- | :---------- |
+| **Admin**  | `admin@gmail.com`        | `Pa$$w0rd!` |
+| **Driver** | `rubel.driver@gmail.com` | `Pa$$w0rd!` |
+| **Rider**  | `rana@rider.com`         | `Pa$$w0rd!` |
+
+---
+
 ```
 ## Key Features
 🔒 **JWT Authentication** with role-based access (Admin, Driver, Rider)  
