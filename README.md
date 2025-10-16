@@ -12,7 +12,7 @@ MyTrip Ride Sharing Backend is a RESTful API service for managing ride sharing o
 | Role       | Email                    | Password    |
 | :--------- | :----------------------- | :---------- |
 | **Admin**  | `admin@gmail.com`        | `Pa$$w0rd!` |
-| **Driver** | `rubel.driver@gmail.com` | `Pa$$w0rd!` |
+| **Driver** | `rubel@driver.com`       | `Pa$$w0rd!` |
 | **Rider**  | `rana@rider.com`         | `Pa$$w0rd!` |
 
 ---
